@@ -106,6 +106,8 @@ test("the published library has the files the catalog points at, skills copied b
   const byPath = new Map(files.map((file) => [file.path, file.content]));
   for (const path of [entry.package, entry.manifest, entry.readme, ...entry.skills]) assert.ok(byPath.has(path), path);
   assert.equal(entry.members, 1);
+  assert.equal(entry.outcome, undefined, "the Templates card shows the tagline");
+  assert.equal(entry.summary, splitPackage(worker).metadata.tagline);
   assert.equal(byPath.get("teams/literature-scout/skills/survey-a-field/SKILL.md"), playbook);
   const manifest = JSON.parse(byPath.get(entry.manifest));
   assert.deepEqual(manifest.team.room.defaultResponder, { kind: "member", member: "literature-scout" });

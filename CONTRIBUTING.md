@@ -27,8 +27,8 @@ viết paper" là DW.
 
 ## Thử trước khi mở pull request
 
-- **Một playbook:** copy toàn bộ `SKILL.md`, dán vào **Settings → Skills library → Import a skill** trong QACI Duo,
-  gán cho một DW và giao cho nó một việc thật.
+- **Một playbook:** copy toàn bộ `SKILL.md`, dán vào **Settings → Skills → Import a skill** trong QACI Duo (cần bật
+  **Advanced mode**), bật skill, **Assign** cho một DW và giao cho nó một việc thật.
 - **Cả một DW:** chạy `npm run build`, đẩy nhánh lên fork, rồi trong QACI Duo vào **+ → Templates → Import** và dán link
   GitHub của `dist/packages/<dw>.md`. Hoặc dán link sau khi đã đẩy file đó lên một nhánh của fork.
 

@@ -462,7 +462,7 @@ export function workerLibraryFiles(markdown, playbooksByName) {
     name: worker.name,
     summary: oneLine(worker.tagline, 300),
     category: worker.category,
-    outcome: oneLine(worker.outcomes[0], 300),
+    // No `outcome`: the Templates card then shows the summary, which is the worker's tagline.
     setupMinutes: worker.setupMinutes ?? 5,
     ...(worker.featured === true ? { featured: true } : {}),
     package: `packages/${id}.md`,

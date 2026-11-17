@@ -47,7 +47,7 @@ write("README.md", [
   "",
   "## Playbook",
   "",
-  "Thêm một playbook vào DW đang có: mở link SKILL.md, copy toàn bộ, dán vào **Settings → Skills library → Import a skill**, rồi gán cho DW.",
+  "Thêm một playbook vào DW đang có: mở link SKILL.md, copy toàn bộ, dán vào **Settings → Skills → Import a skill** (bật Advanced mode), bật skill rồi Assign cho DW.",
   "",
   "| Playbook | Mô tả | Thuộc DW | SKILL.md |",
   "|---|---|---|---|",

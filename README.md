@@ -27,7 +27,8 @@ workers/<dw>.md ──────────┴─► pull request ─► CI v
   với đủ playbook của DW đó.
 - **Thêm một playbook vào DW đang có:** mở file `SKILL.md` của playbook trên nhánh
   [`library`](https://github.com/vanhaito/qaci-duo-playbooks/tree/library) (bấm **Raw**), copy toàn bộ, dán vào
-  **Settings → Skills library → Import a skill**, rồi gán cho DW muốn dùng.
+  **Settings → Skills → Import a skill** (bật **Advanced mode** trong Settings để thấy mục Skills). Skill mới vào ở
+  trạng thái tắt: đọc lại, bật công tắc, rồi **Assign** cho DW muốn dùng.
 - **Thử một DW trước khi merge:** **+ → Templates → Import**, dán link GitHub của file gói DW
   (xem [CONTRIBUTING.md](CONTRIBUTING.md#thử-trước-khi-mở-pull-request)).
 
