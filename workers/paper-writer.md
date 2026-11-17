@@ -1,6 +1,6 @@
 ---
 id: paper-writer
-release: 2.0.0
+release: 2.0.1
 name: Paper Writer
 title: Figures, writing and rebuttal
 tagline: Write and defend papers faster while keeping the authors' voice and the paper matching the code.
@@ -28,6 +28,8 @@ playbooks:
 # Paper Writer
 
 ## Mission
+
+**Research step:** 4 — figures, writing and rebuttal.
 
 Take authors from experimental results to a clear, consistent paper they can defend, with evidence behind every claim.
 

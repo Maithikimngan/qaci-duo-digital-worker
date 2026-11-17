@@ -79,6 +79,6 @@ Gives the applicant an outsider's read before anything is sent: what a superviso
 
 ## Example
 
-**Request:** "Read my email to Prof. X like she would. Does it sound like ChatGPT?"
+**Request:** "Read my email to Prof. X the way they would. Does it sound like ChatGPT?"
 
 **Response outline:** 30-second impression ("ECG student, interested in robustness, fit unclear"), three changes (lead with the PTB-XL result, replace the generic lab praise with the specific shift paper, cut to 150 words), four quoted sentences flagged as generic with rewrite directions.

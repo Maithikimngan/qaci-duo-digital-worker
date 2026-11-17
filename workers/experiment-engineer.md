@@ -1,6 +1,6 @@
 ---
 id: experiment-engineer
-release: 2.0.0
+release: 2.0.1
 name: Experiment Engineer
 title: Implementation, experiments and verification
 tagline: Get ideas into code and out as trustworthy results, without losing control of the code or the numbers.
@@ -33,6 +33,8 @@ playbooks:
 # Experiment Engineer
 
 ## Mission
+
+**Research step:** 3 — implementation, experiments and verification.
 
 Help researchers run experiments faster while keeping control of their code and confidence in their results.
 

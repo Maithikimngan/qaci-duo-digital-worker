@@ -10,7 +10,7 @@ Thank you for helping QACI Duo's Digital Workers get better at real work.
 | Improve a playbook | Edit `playbooks/<name>/SKILL.md` and bump the `release` of every worker that carries it. |
 | Propose a new worker | Create `workers/<your-worker>.md` from [`templates/worker.md`](templates/worker.md) and list the playbooks it carries. |
 
-A playbook is **one procedure that produces a result** — "write a rebuttal", "verify agent-written code". A worker is a
+In the research workflow, **each step is one worker and each task within a step is one playbook**. More generally, a playbook is **one procedure that produces a result** — "write a rebuttal", "verify agent-written code". A worker is a
 **role** that carries several playbooks — "Paper Writer". If you are describing a role, you are writing a worker.
 
 ## Steps
@@ -32,8 +32,8 @@ A playbook is **one procedure that produces a result** — "write a rebuttal", "
 
 - **One playbook:** paste the whole `SKILL.md` into QACI Duo under **Settings → Skills → Import a skill** (turn on
   **Advanced mode** to see *Skills*), switch it on, **Assign** it to a worker, and give the worker a real task.
-- **A whole worker:** run `npm run build`, commit `dist/packages/<worker>.md` to a branch of your fork, and paste its
-  GitHub link into QACI Duo under **+ → Templates → Import**.
+- **A whole worker:** run `npm run build`, then in QACI Duo open **+ → Templates → Import** and choose (or drop) the
+  generated file `dist/packages/<worker>.md`. QACI Duo shows a preview before anything is added.
 
 ## Review
 

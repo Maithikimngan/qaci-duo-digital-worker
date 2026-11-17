@@ -13,14 +13,17 @@ workers/<id>.md ───────────┴─► pull request ─► C
 
 ## Available today
 
-The first workers cover the research lifecycle, from reading the literature to applying for a PhD.
+The first workers follow a research workflow. **Each step is one Digital Worker, and each task within the step is one
+of its playbooks.**
 
-| Digital Worker | Playbooks |
-|---|---|
-| **Literature Scout** — literature, domain knowledge and idea validation | `survey-a-field`, `learn-domain-knowledge`, `validate-idea` |
-| **Experiment Engineer** — implementation, experiments and verification | `idea-to-prototype`, `run-experiments`, `verify-agent-code` |
-| **Paper Writer** — figures, writing and rebuttal | `generate-figures`, `paper-writing-pipeline`, `rebuttal` |
-| **PhD Application Advisor** — supervisor search and application polish | `find-supervisors`, `mentor-outreach`, `application-review` |
+| Step | Digital Worker | Playbooks |
+|---|---|---|
+| 2. Literature, domain knowledge and ideation | **Literature Scout** | `survey-a-field`, `learn-domain-knowledge`, `validate-idea` |
+| 3. Implementation, experiments and verification | **Experiment Engineer** | `idea-to-prototype`, `run-experiments`, `verify-agent-code` |
+| 4. Figures, writing and rebuttal | **Paper Writer** | `generate-figures`, `paper-writing-pipeline`, `rebuttal` |
+| 5. Agents for PhD applications | **PhD Application Advisor** | `find-supervisors`, `mentor-outreach`, `application-review` |
+
+A new step becomes a new worker; a new task within a step becomes a new playbook on that step's worker.
 
 Every playbook follows the same shape — *When to use*, *Inputs*, *Procedure* with a check per step, *Output* template,
 *Quality checklist*, *Guardrails* and an *Example* — so a worker knows what to ask, what to do and what to hand back.
