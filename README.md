@@ -18,7 +18,7 @@ workers/<dw>.md ──────────┴─► pull request ─► CI v
 |---|---|
 | **Literature Scout** — khảo sát tài liệu và kiểm chứng ý tưởng | `survey-a-field`, `learn-domain-knowledge`, `validate-idea` |
 | **Experiment Engineer** — hiện thực ý tưởng, chạy thí nghiệm và kiểm chứng | `idea-to-prototype`, `run-experiments`, `verify-agent-code` |
-| **Paper Writer** — hình, viết bài và phản biện | `generate-figures`, `paper-writing-pipeline` |
+| **Paper Writer** — hình, viết bài và phản biện | `generate-figures`, `paper-writing-pipeline`, `rebuttal` |
 | **PhD Application Advisor** — tìm giáo sư hướng dẫn và hoàn thiện hồ sơ | `find-supervisors`, `mentor-outreach`, `application-review` |
 
 ## Dùng trong QACI Duo
