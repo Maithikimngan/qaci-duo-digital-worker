@@ -1,0 +1,18 @@
+{
+  "name": "qaci-duo-teams",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "QACI Duo team playbooks, contributed by pull request",
+  "scripts": {
+    "test": "node scripts/validate.mjs && node --test tests/*.test.mjs",
+    "build": "node scripts/build.mjs dist"
+  },
+  "dependencies": {
+    "yaml": "2.9.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
