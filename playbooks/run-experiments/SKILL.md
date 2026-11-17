@@ -1,41 +1,93 @@
 ---
 name: run-experiments
-title: Thiết kế và chạy thí nghiệm
-description: Dựng pipeline dữ liệu, baseline và ablation, đọc log huấn luyện và phân tích ca thất bại để biết kết quả có đáng tin hay không.
-triggers: chạy thí nghiệm, baseline, ablation, đọc training log, phân tích lỗi, failure case
-tags: research, experiments
+title: Design and run experiments
+description: Build a leak-free data pipeline, reproduce baselines, design ablations with several seeds, read training logs, and analyse failure cases so the results can be trusted and reported.
+triggers: run experiments, set up baselines, design an ablation, read my training logs, analyse failure cases, why does my model fail
+tags: research, experiments, evaluation
 license: MIT
 author: QACI
 ---
 
-# Thiết kế và chạy thí nghiệm
+# Design and run experiments
 
-## Khi nào dùng
+Produces results that survive review: fixed splits, honest baselines, ablations that isolate each component, multiple seeds, and an error analysis that explains where the method fails.
 
-Prototype đã chạy và cần kết quả đủ chặt để đưa vào paper.
+## When to use
 
-## Đầu vào cần có
+- A prototype works and the paper's experiments must be designed and run.
+- Results are noisy, surprising, or contradict expectations.
+- **Not for:** first implementation of an idea (use `idea-to-prototype`).
 
-- Câu hỏi thí nghiệm cần trả lời.
-- Dữ liệu, cấu hình, tài nguyên tính toán có sẵn.
+## Inputs
 
-## Các bước
+| Input | Required | Notes |
+|---|---|---|
+| The question each experiment answers | yes | One question per experiment |
+| Data and current splits | yes | Where they live and how they were made |
+| Method and config | yes | The prototype to evaluate |
+| Compute budget | yes | GPU hours available; drives how many seeds and runs |
+| Published baselines | no | Papers and numbers to compare with |
 
-1. Lập bảng thí nghiệm: câu hỏi, biến thay đổi, biến cố định, metric, seed, cấu hình.
-2. Pipeline dữ liệu: chia tập cố định và lưu lại; kiểm tra rò rỉ (mẫu trùng, cùng bệnh nhân hoặc người dùng ở cả train và test); thống kê phân phối nhãn.
-3. Baseline: ít nhất một baseline đơn giản và một baseline mạnh đã công bố. Tái hiện số liệu gốc của baseline trước khi so.
-4. Ablation: bỏ từng thành phần đề xuất, mỗi lần đổi một yếu tố. Chạy ít nhất 3 seed, báo trung bình ± độ lệch chuẩn.
-5. Đọc log huấn luyện: loss train và val, learning rate, gradient norm, NaN, overfit, độ lệch giữa các seed. Ghi nhận xét kèm số bước.
-6. Phân tích lỗi: lấy mẫu ca sai theo nhóm (lớp, độ dài, nguồn dữ liệu), tìm mẫu hình chung, nêu giả thuyết và thí nghiệm kế tiếp.
+## Procedure
 
-## Kết quả trả về
+1. **Write the experiment table first.** One row per run: question, what changes, what stays fixed, metric, seeds, config file, expected duration.
+   - *Check:* every run answers a question; drop runs that do not.
+2. **Lock the data.** Create the splits once, save them (IDs, not just a seed) and record their hash.
+   - Check for leakage: duplicates across splits, the same patient or user in train and test, test data used for tuning.
+   - Report the label distribution per split.
+   - *Check:* a script asserts the splits are disjoint at the right level.
+3. **Baselines.** Include at least one simple baseline (majority class, linear model or a standard architecture) and one strong published baseline.
+   - Reproduce the published baseline's reported number in its own setting before comparing in yours; report both.
+4. **Ablations.** Remove or replace one component at a time. Use at least three seeds per configuration; report mean ± standard deviation.
+5. **Run and record.** For every run store the commit, config, seed, start time and output path. Keep a results file that the tables are built from.
+6. **Read the logs.** Check training and validation loss, learning rate, gradient norm, NaN or Inf, overfitting, and spread across seeds. Cite the step numbers where things happen.
+7. **Analyse failures.** Sample wrong predictions by group (class, length, data source, site). Look for a shared pattern, state a hypothesis, and propose the experiment that would test it.
+8. **Report.** Build tables from the results file only, and state which differences are within seed noise.
 
-- Bảng kết quả có seed, cấu hình và commit.
-- Nhận xét về log huấn luyện và phân tích ca thất bại.
-- Đề xuất bước tiếp theo.
+## Output
 
-## Không được làm
+```markdown
+## Experiment report: <question>
 
-- Không chọn seed hay checkpoint tốt nhất dựa trên tập test.
-- Không báo kết quả chưa chạy hoặc số ước lượng như kết quả thật.
-- Không sửa tập test.
+<Three sentences: the main result, how robust it is, the most important failure mode.>
+
+### Setup
+Data and splits (hash), metric, seeds, compute used.
+
+### Results
+| Method | Metric (mean ± std, n seeds) | Δ vs. baseline | Commit / config |
+|---|---|---|---|
+
+### Ablations
+| Variant | Metric | Δ | Reading |
+|---|---|---|---|
+
+### Training-log notes
+- <observation> (step …, run …)
+
+### Failure analysis
+| Group | Error rate | Example IDs | Hypothesis |
+|---|---|---|---|
+
+### Next experiments
+```
+
+## Quality checklist
+
+- [ ] Splits are saved, hashed and leak-checked.
+- [ ] Every number in a table traces to a run with commit, config and seed.
+- [ ] Differences smaller than seed noise are called out.
+- [ ] The test set was never used to choose a checkpoint, seed or hyperparameter.
+
+## Guardrails
+
+- **Never:** select seeds, checkpoints or hyperparameters on the test set.
+- **Never:** report an estimate or an unfinished run as a result.
+- **Never:** modify the test set after seeing results.
+- **Ask first:** before launching runs beyond the agreed compute budget.
+
+## Example
+
+**Request:** "My method beats the baseline by 1.2 AUROC. Make it paper-ready."
+
+**Response outline:** experiment table, patient-level split check, reproduced baseline number, three-seed results showing the gain is 1.2 ± 0.4, ablation of each component, log notes on a late-training divergence in one seed, failure analysis by recording site.

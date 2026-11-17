@@ -1,40 +1,95 @@
 ---
 name: survey-a-field
-title: Khảo sát một lĩnh vực
-description: Lập bản đồ một lĩnh vực nghiên cứu, đọc kỹ các paper chính và kiểm tra ý tưởng có trùng công trình đã có, tách rõ điều đã kiểm với điều chỉ là phỏng đoán.
-triggers: khảo sát lĩnh vực, literature review, related work, đọc paper, ý tưởng này đã có ai làm chưa
+title: Survey a research field
+description: Map a research field into approaches with representative papers, close-read the key ones, and check whether the user's idea overlaps prior work, separating verified facts from model recall.
+triggers: survey a field, literature review, related work, map the literature, has anyone done this, read these papers
 tags: research, literature
 license: MIT
 author: QACI
 ---
 
-# Khảo sát một lĩnh vực
+# Survey a research field
 
-## Khi nào dùng
+Turns a topic or research question into a sourced map of the field: the main approaches, the papers that define them, what is solved, what is open, and how close the user's idea sits to existing work.
 
-Bắt đầu một hướng mới, viết phần related work, hoặc cần biết một ý tưởng đã có người làm chưa.
+## When to use
 
-## Đầu vào cần có
+- Starting a new direction and needing the lay of the land.
+- Writing or refreshing a related-work section.
+- Checking whether an idea has already been published.
+- **Not for:** deciding between candidate ideas (use `validate-idea`) or learning an unfamiliar data domain (use `learn-domain-knowledge`).
 
-- Chủ đề hoặc câu hỏi nghiên cứu, càng cụ thể càng tốt.
-- Tùy chọn: vài paper "hạt giống", venue mục tiêu, khoảng năm cần xem.
+## Inputs
 
-## Các bước
+| Input | Required | Notes |
+|---|---|---|
+| Topic or research question | yes | One or two sentences; the more specific, the better the map |
+| The user's idea, if any | no | Needed for the overlap check |
+| Seed papers | no | Titles or links the user already trusts |
+| Scope | no | Venues, years, subfields to include or exclude. Default: last five years, all major venues |
 
-1. Viết lại câu hỏi thành 3-5 truy vấn: từ khoá chính, từ đồng nghĩa, tên benchmark hoặc dataset.
-2. Tìm trên Google Scholar, Semantic Scholar, arXiv, OpenReview và proceedings của venue. Ghi truy vấn và nguồn của từng kết quả; không trích paper không mở được.
-3. Gom kết quả thành 3-6 nhánh cách tiếp cận. Mỗi nhánh 2-5 paper tiêu biểu với: bài toán, phương pháp, dataset, kết quả chính, hạn chế tác giả tự nêu.
-4. Đọc kỹ 3-5 paper quan trọng nhất: phương pháp, bảng kết quả và phần hạn chế, không chỉ abstract. Ghi số liệu kèm số bảng hoặc trang.
-5. Kiểm tra trùng ý tưởng: so ý tưởng của người dùng với từng paper gần nhất theo bài toán, phương pháp, dữ liệu và cách đánh giá. Nêu cụ thể điểm giống và điểm khác.
-6. Đánh dấu độ tin cậy cho từng khẳng định: **đã kiểm** (đọc trong paper, có trang hoặc bảng) hay **cần kiểm lại** (chỉ từ abstract, blog hoặc trí nhớ của mô hình).
+## Procedure
 
-## Kết quả trả về
+1. **Frame the search.** Rewrite the question into 3–6 queries: core terms, synonyms, task names, benchmark and dataset names, and the names of well-known methods.
+   - *Check:* each query targets a different angle; record every query used.
+2. **Collect candidates.** Search Google Scholar, Semantic Scholar, arXiv, OpenReview and the venues' proceedings. Follow references and citations of seed papers one hop in each direction.
+   - Keep only papers you could open. Note for each: title, authors, year, venue, link.
+   - *Check:* 20–60 candidates for a broad field, fewer for a narrow one.
+3. **Cluster into approaches.** Group candidates into 3–6 approaches by the core idea, not by keyword. Name each approach in plain words.
+   - For each approach pick 2–5 representative papers: the origin, the strongest current result, and a notable variant.
+   - *Check:* every representative paper fits exactly one approach; borderline papers are noted as such.
+4. **Close-read the key papers.** For the 3–5 papers that matter most, read the method, the main results table and the limitations section — not only the abstract.
+   - Record numbers with their table or page (for example "Table 2, p. 6").
+   - Record the evaluation setup: dataset, split, metric, baselines.
+   - *Check:* no number is quoted without its location.
+5. **Find what is open.** From limitations sections, failure cases and disagreements between papers, list the open problems and where results conflict.
+6. **Check overlap with the user's idea** (when one is given). Compare the idea with the closest 3–5 papers on four axes: problem, method, data, evaluation.
+   - Verdict: *no overlap found*, *partial overlap*, or *already done*, with the closest paper named.
+   - *Check:* "no overlap found" lists where and how you searched.
+7. **Label confidence.** Mark every claim **verified** (read in the paper, location given) or **to re-check** (from an abstract, a blog post, or model recall).
 
-- Bảng nhánh × paper: tên, năm, venue, link, ý chính.
-- Mức trùng của ý tưởng: không trùng, trùng một phần, hoặc đã có người làm, kèm paper gần nhất.
-- Danh sách điều người dùng nên tự kiểm lại.
+## Output
 
-## Không được làm
+```markdown
+## Field map: <topic>
 
-- Không bịa tên paper, tác giả, số liệu hay DOI. Không tìm thấy thì nói không tìm thấy.
-- Không kết luận "chưa ai làm" chỉ vì không tìm ra; ghi rõ đã tìm ở đâu, bằng truy vấn nào.
+<Three sentences: the main approaches, the current best results, the biggest open problem.>
+
+### Approaches
+| Approach | Core idea | Representative papers (year, venue) | Strength | Known limitation |
+|---|---|---|---|---|
+
+### Key papers, close-read
+- **<Title>** (<venue year>, <link>) — problem, method, headline result (Table X), limitation stated by the authors.
+
+### Open problems
+- <Problem> — evidence: <paper, location>.
+
+### Overlap with your idea
+Verdict: <no overlap found / partial / already done>. Closest work: <paper>. Same: … Different: …
+
+### Searches run
+<queries and sources>
+
+### To re-check
+- <claims marked "to re-check">
+```
+
+## Quality checklist
+
+- [ ] Every paper listed has a link that opens.
+- [ ] Every number cites its table or page.
+- [ ] The overlap verdict names the closest paper and the concrete differences.
+- [ ] Claims from abstracts or memory are marked "to re-check".
+
+## Guardrails
+
+- **Never:** invent a paper, author, venue, number or DOI. If a paper cannot be found or opened, say so.
+- **Never:** conclude "nobody has done this" from a failed search; report the searches instead.
+- **Ask first:** before spending a long session on a very broad field, confirm the scope.
+
+## Example
+
+**Request:** "Survey self-supervised pretraining for 12-lead ECG classification and tell me if contrastive learning across leads has been done."
+
+**Response outline:** field map with approaches (contrastive, masked reconstruction, multimodal with reports), close-read of four papers with their PTB-XL numbers, open problems (label scarcity, cross-hospital shift), overlap verdict naming the closest cross-lead contrastive paper, list of queries, items to re-check.

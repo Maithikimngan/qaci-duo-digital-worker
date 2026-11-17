@@ -18,14 +18,14 @@ const list = (value, max) => Array.isArray(value) && value.length <= max;
 /** The YAML frontmatter and the readable body of a playbook file. */
 export function splitPackage(markdown) {
   const match = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
-  if (!match) throw new Error("thiếu phần YAML (frontmatter) giữa hai dòng --- ở đầu file");
+  if (!match) throw new Error("the YAML frontmatter between two --- lines is missing at the top of the file");
   let metadata;
   try {
     metadata = parseYaml(match[1]);
   } catch (error) {
-    throw new Error(`phần YAML không đọc được: ${error.message.split("\n")[0]}`);
+    throw new Error(`the YAML frontmatter cannot be read: ${error.message.split("\n")[0]}`);
   }
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new Error("phần YAML phải là một object");
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new Error("the YAML frontmatter must be a mapping");
   return { metadata, body: markdown.slice(match[0].length) };
 }
 
@@ -45,8 +45,8 @@ function credentialFields(value, path, out) {
 export function validatePackage(markdown, slug) {
   const errors = [];
   const fail = (message) => errors.push(message);
-  if (Buffer.byteLength(markdown) > MAX_PACKAGE_BYTES) return ["file lớn hơn 1 MB"];
-  if (!SLUG.test(slug)) fail(`tên file "${slug}.md" phải là chữ thường, số và dấu gạch ngang`);
+  if (Buffer.byteLength(markdown) > MAX_PACKAGE_BYTES) return ["the file is larger than 1 MB"];
+  if (!SLUG.test(slug)) fail(`the file name "${slug}.md" must use lowercase letters, digits and hyphens`);
   let pkg;
   let body;
   try {
@@ -54,115 +54,115 @@ export function validatePackage(markdown, slug) {
   } catch (error) {
     return [...errors, error.message];
   }
-  if (pkg.botmrr !== 1) fail("thiếu dòng `botmrr: 1` (định dạng BotMRR Markdown v1)");
+  if (pkg.botmrr !== 1) fail("`botmrr: 1` is missing (BotMRR Markdown v1)");
   for (const heading of REQUIRED_SECTIONS) {
-    if (!new RegExp(`^## ${heading.replace(/ /g, "\\s+")}\\s*$`, "m").test(body)) fail(`thiếu mục \`## ${heading}\` trong phần thân`);
+    if (!new RegExp(`^## ${heading.replace(/ /g, "\\s+")}\\s*$`, "m").test(body)) fail(`the body is missing the \`## ${heading}\` section`);
   }
-  for (const field of credentialFields(pkg, "", [])) fail(`trường \`${field}\` trông như thông tin đăng nhập; playbook không được mang token hay mật khẩu`);
+  for (const field of credentialFields(pkg, "", [])) fail(`the field \`${field}\` looks like a credential; a playbook never carries tokens or passwords`);
 
-  if (pkg.id !== slug) fail(`id phải trùng tên file: \`id: ${slug}\``);
-  if (!text(pkg.name, 100)) fail("name là bắt buộc (tối đa 100 ký tự)");
-  if (!text(pkg.tagline, 160)) fail("tagline là bắt buộc (tối đa 160 ký tự)");
-  if (!text(pkg.summary, 2000)) fail("summary là bắt buộc (tối đa 2000 ký tự)");
-  if (!/^\d+\.\d+\.\d+$/.test(String(pkg.release ?? ""))) fail("release phải theo dạng 1.0.0");
-  if (!text(pkg.category, 80)) fail("category là bắt buộc");
-  if (!text(pkg.author?.name, 100)) fail("author.name là bắt buộc");
-  if (!text(pkg.license, 80)) fail("license là bắt buộc");
+  if (pkg.id !== slug) fail(`id must match the file name: \`id: ${slug}\``);
+  if (!text(pkg.name, 100)) fail("name is required (at most 100 characters)");
+  if (!text(pkg.tagline, 160)) fail("tagline is required (at most 160 characters)");
+  if (!text(pkg.summary, 2000)) fail("summary is required (at most 2000 characters)");
+  if (!/^\d+\.\d+\.\d+$/.test(String(pkg.release ?? ""))) fail("release must be a semantic version such as 1.0.0");
+  if (!text(pkg.category, 80)) fail("category is required");
+  if (!text(pkg.author?.name, 100)) fail("author.name is required");
+  if (!text(pkg.license, 80)) fail("license is required");
   if (!list(pkg.outcomes, 12) || pkg.outcomes.length === 0 || pkg.outcomes.some((value) => !text(value, 240))) {
-    fail("outcomes cần 1-12 dòng, mỗi dòng tối đa 240 ký tự");
+    fail("outcomes needs 1-12 lines of at most 240 characters");
   }
-  if (!Number.isInteger(pkg.setupMinutes) || pkg.setupMinutes < 1 || pkg.setupMinutes > 240) fail("setupMinutes phải là số phút từ 1 đến 240");
+  if (!Number.isInteger(pkg.setupMinutes) || pkg.setupMinutes < 1 || pkg.setupMinutes > 240) fail("setupMinutes must be a whole number of minutes from 1 to 240");
 
   const requirements = pkg.requirements;
   if (!requirements || !list(requirements.apps ?? [], 30) || !list(requirements.capabilities ?? [], 20)) {
-    fail("requirements không hợp lệ (apps tối đa 30, capabilities tối đa 20)");
+    fail("requirements is invalid (at most 30 apps and 20 capabilities)");
   }
   for (const [index, app] of (requirements?.apps ?? []).entries()) {
     if (!text(app?.slug, 80) || !KEY.test(app.slug) || !text(app?.label, 100) || !text(app?.reason, 240)) {
-      fail(`requirements.apps[${index}] cần slug, label và reason`);
+      fail(`requirements.apps[${index}] needs slug, label and reason`);
     }
   }
 
   if (!Array.isArray(pkg.agents) || pkg.agents.length === 0 || pkg.agents.length > 50) {
-    fail("agents cần 1-50 DW");
+    fail("agents needs 1-50 entries");
     return errors;
   }
   const agentKeys = new Set();
   for (const [index, agent] of pkg.agents.entries()) {
     const at = `agents[${index}]`;
-    if (!text(agent?.key, 64) || !KEY.test(agent.key)) fail(`${at}.key không hợp lệ`);
+    if (!text(agent?.key, 64) || !KEY.test(agent.key)) fail(`${at}.key is invalid`);
     else if (agentKeys.has(agent.key)) fail(`${at}.key bị trùng: ${agent.key}`);
     else agentKeys.add(agent.key);
-    if (!text(agent?.name, 100)) fail(`${at}.name là bắt buộc`);
-    if (typeof agent?.title !== "string" || agent.title.length > 200) fail(`${at}.title là bắt buộc (tối đa 200 ký tự)`);
-    if (typeof agent?.description !== "string" || agent.description.length > 4000) fail(`${at}.description là bắt buộc (tối đa 4000 ký tự)`);
-    if (!COLORS.has(agent?.appearance?.color)) fail(`${at}.appearance.color phải là một trong: ${[...COLORS].join(", ")}`);
+    if (!text(agent?.name, 100)) fail(`${at}.name is required`);
+    if (typeof agent?.title !== "string" || agent.title.length > 200) fail(`${at}.title is required (at most 200 characters)`);
+    if (typeof agent?.description !== "string" || agent.description.length > 4000) fail(`${at}.description is required (at most 4000 characters)`);
+    if (!COLORS.has(agent?.appearance?.color)) fail(`${at}.appearance.color must be one of: ${[...COLORS].join(", ")}`);
   }
-  if (pkg.chiefOfStaff !== undefined && !agentKeys.has(pkg.chiefOfStaff)) fail(`chiefOfStaff "${pkg.chiefOfStaff}" không phải key của DW nào`);
+  if (pkg.chiefOfStaff !== undefined && !agentKeys.has(pkg.chiefOfStaff)) fail(`chiefOfStaff "${pkg.chiefOfStaff}" is not an agent key`);
 
   const playbookKeys = new Set();
-  if (!list(pkg.playbooks, 80) || pkg.playbooks.length === 0) fail("playbooks cần ít nhất 1 quy trình (tối đa 80)");
+  if (!list(pkg.playbooks, 80) || pkg.playbooks.length === 0) fail("playbooks needs 1-80 entries");
   for (const [index, playbook] of (Array.isArray(pkg.playbooks) ? pkg.playbooks : []).entries()) {
     const at = `playbooks[${index}]`;
-    if (!text(playbook?.key, 64) || !KEY.test(playbook.key)) fail(`${at}.key không hợp lệ`);
+    if (!text(playbook?.key, 64) || !KEY.test(playbook.key)) fail(`${at}.key is invalid`);
     else if (playbookKeys.has(playbook.key)) fail(`${at}.key bị trùng: ${playbook.key}`);
     else playbookKeys.add(playbook.key);
     if (!text(playbook?.name, 100) || !text(playbook?.summary, 300) || !text(playbook?.instructions, 24_000)) {
-      fail(`${at} cần name, summary và instructions`);
+      fail(`${at} needs name, summary and instructions`);
     }
     if (!list(playbook?.triggers, 30) || playbook.triggers.length === 0 || playbook.triggers.some((value) => !text(value, 100))) {
-      fail(`${at}.triggers cần 1-30 cụm từ`);
+      fail(`${at}.triggers needs 1-30 phrases`);
     }
   }
   for (const agent of pkg.agents) {
     for (const key of agent?.playbooks ?? []) {
-      if (!playbookKeys.has(key)) fail(`DW ${agent.key} dùng playbook "${key}" không có trong playbooks`);
+      if (!playbookKeys.has(key)) fail(`agent ${agent.key} uses playbook "${key}", which is not in playbooks`);
     }
   }
 
   const roomKeys = new Set();
-  if (!list(pkg.rooms ?? [], 30)) fail("rooms tối đa 30 phòng");
+  if (!list(pkg.rooms ?? [], 30)) fail("rooms allows at most 30 entries");
   for (const [index, room] of (pkg.rooms ?? []).entries()) {
     const at = `rooms[${index}]`;
-    if (!text(room?.key, 64) || roomKeys.has(room.key)) fail(`${at}.key không hợp lệ hoặc bị trùng`);
+    if (!text(room?.key, 64) || roomKeys.has(room.key)) fail(`${at}.key is invalid or repeated`);
     else roomKeys.add(room.key);
-    if (!text(room?.name, 100) || typeof room?.bulletin !== "string" || room.bulletin.length > 12_000) fail(`${at} cần name và bulletin`);
+    if (!text(room?.name, 100) || typeof room?.bulletin !== "string" || room.bulletin.length > 12_000) fail(`${at} needs name and bulletin`);
     if (!list(room?.members, 50) || room.members.length === 0 || room.members.some((key) => !agentKeys.has(key))) {
-      fail(`${at}.members có DW không tồn tại`);
+      fail(`${at}.members names an agent that does not exist`);
     }
     const responder = room?.defaultResponder;
-    if (!responder || !["agent", "everyone", "mentions"].includes(responder.kind)) fail(`${at}.defaultResponder.kind phải là agent, everyone hoặc mentions`);
-    else if (responder.kind === "agent" && !room.members?.includes(responder.agent)) fail(`${at}.defaultResponder phải là thành viên của phòng`);
+    if (!responder || !["agent", "everyone", "mentions"].includes(responder.kind)) fail(`${at}.defaultResponder.kind must be agent, everyone or mentions`);
+    else if (responder.kind === "agent" && !room.members?.includes(responder.agent)) fail(`${at}.defaultResponder must be a member of the room`);
   }
 
   const routineKeys = new Set();
-  if (!list(pkg.routines ?? [], 50)) fail("routines tối đa 50 lịch chạy");
+  if (!list(pkg.routines ?? [], 50)) fail("routines allows at most 50 entries");
   for (const [index, routine] of (pkg.routines ?? []).entries()) {
     const at = `routines[${index}]`;
-    if (!text(routine?.key, 64) || !KEY.test(routine.key) || routineKeys.has(routine.key)) fail(`${at}.key không hợp lệ hoặc bị trùng`);
+    if (!text(routine?.key, 64) || !KEY.test(routine.key) || routineKeys.has(routine.key)) fail(`${at}.key is invalid or repeated`);
     else routineKeys.add(routine.key);
-    if (!text(routine?.name, 80) || !text(routine?.prompt, 20_000) || !agentKeys.has(routine?.agent)) fail(`${at} cần name, prompt và agent có thật`);
-    if (routine?.enabledAfterInstall !== false) fail(`${at}: lịch chạy phải tắt khi cài (\`enabledAfterInstall: false\`); chủ của DW tự bật`);
-    if (!["maus", "cloud"].includes(routine?.runOn)) fail(`${at}.runOn phải là maus hoặc cloud`);
+    if (!text(routine?.name, 80) || !text(routine?.prompt, 20_000) || !agentKeys.has(routine?.agent)) fail(`${at} needs name, prompt and an existing agent`);
+    if (routine?.enabledAfterInstall !== false) fail(`${at}: a routine must install switched off (\`enabledAfterInstall: false\`); its owner turns it on`);
+    if (!["maus", "cloud"].includes(routine?.runOn)) fail(`${at}.runOn must be maus or cloud`);
     if (!Number.isInteger(routine?.durationMinutes) || routine.durationMinutes < 5 || routine.durationMinutes > 240) {
-      fail(`${at}.durationMinutes phải từ 5 đến 240`);
+      fail(`${at}.durationMinutes must be from 5 to 240`);
     }
     const schedule = routine?.schedule;
     if (schedule?.type === "daily") {
       const days = schedule.weekdays;
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time ?? "")) fail(`${at}.schedule.time phải dạng HH:MM, ví dụ "09:00"`);
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time ?? "")) fail(`${at}.schedule.time must be HH:MM, for example "09:00"`);
       if (!Array.isArray(days) || days.length === 0 || days.length > 7 || days.some((day) => !Number.isInteger(day) || day < 0 || day > 6) || new Set(days).size !== days.length) {
-        fail(`${at}.schedule.weekdays là các số 0-6 không trùng (0 = Chủ nhật)`);
+        fail(`${at}.schedule.weekdays must be distinct numbers 0-6 (0 = Sunday)`);
       }
     } else if (schedule?.type !== "once" || !Number.isInteger(schedule.at)) {
-      fail(`${at}.schedule phải là daily (time + weekdays) hoặc once (at)`);
+      fail(`${at}.schedule must be daily (time + weekdays) or once (at)`);
     }
   }
   return errors;
 }
 
 const SECRET_PATTERNS = [
-  ["khóa riêng (private key)", /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
+  ["a private key", /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
   ["GitHub token", /\bgh[pousr]_[A-Za-z0-9]{30,}\b|\bgithub_pat_[A-Za-z0-9_]{40,}\b/],
   ["AWS access key", /\bAKIA[0-9A-Z]{16}\b/],
   ["Slack token", /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/],
@@ -170,8 +170,8 @@ const SECRET_PATTERNS = [
   ["Google API key", /\bAIza[0-9A-Za-z_-]{35}\b/],
   ["JWT", /\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/],
   ["Azure key / connection string", /\b(?:AccountKey|SharedAccessKey)=[A-Za-z0-9+/=]{20,}/],
-  ["URL có kèm mật khẩu", /\bhttps?:\/\/[^\s/:@]+:[^\s/@]+@/],
-  ["mật khẩu hoặc token gán giá trị", /\b(?:password|passwd|pwd|token|api[_-]?key|secret|mat_?khau)\s*[:=]\s*["']?[A-Za-z0-9+/_\-.]{8,}/i],
+  ["a URL with a password in it", /\bhttps?:\/\/[^\s/:@]+:[^\s/@]+@/],
+  ["an assigned password or token", /\b(?:password|passwd|pwd|token|api[_-]?key|secret|mat_?khau)\s*[:=]\s*["']?[A-Za-z0-9+/_\-.]{8,}/i],
 ];
 
 /** Lines that look like a credential, as {line, label}. */
@@ -218,40 +218,40 @@ export function readSkillFrontmatter(raw) {
 export function validatePlaybook(raw, folder) {
   const errors = [];
   const fail = (message) => errors.push(message);
-  if (Buffer.byteLength(raw) > PLAYBOOK_MAX_BYTES) return ["SKILL.md lớn hơn 256 KB"];
-  if (!SKILL_NAME.test(folder) || folder.length > 64) fail(`tên thư mục "${folder}" phải là chữ thường, số và dấu gạch ngang (tối đa 64 ký tự)`);
+  if (Buffer.byteLength(raw) > PLAYBOOK_MAX_BYTES) return ["SKILL.md is larger than 256 KB"];
+  if (!SKILL_NAME.test(folder) || folder.length > 64) fail(`the folder name "${folder}" must use lowercase letters, digits and single hyphens (at most 64 characters)`);
   const front = readSkillFrontmatter(raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw);
-  if (!front) return [...errors, "thiếu phần frontmatter giữa hai dòng --- ở đầu SKILL.md"];
-  if (front.stray.length) fail("mỗi trường trong frontmatter phải nằm trên một dòng `khoa: gia tri` (QACI Duo không đọc danh sách hay giá trị nhiều dòng)");
+  if (!front) return [...errors, "the frontmatter between two --- lines is missing at the top of SKILL.md"];
+  if (front.stray.length) fail("every frontmatter field must sit on one `key: value` line (QACI Duo does not read YAML lists or multi-line values)");
   let parsed;
   try {
     parsed = parseYaml(front.yaml) ?? {};
   } catch (error) {
-    return [...errors, `frontmatter không đọc được như YAML: ${error.message.split("\n")[0]}; đặt giá trị có dấu ": " trong dấu nháy kép`];
+    return [...errors, `the frontmatter is not valid YAML: ${error.message.split("\n")[0]}; put a value containing ": " in double quotes`];
   }
   for (const [key, value] of Object.entries(parsed)) {
-    if (!PLAYBOOK_FIELDS.has(key)) fail(`trường \`${key}\` không được hỗ trợ; chỉ dùng: ${[...PLAYBOOK_FIELDS].join(", ")}`);
-    else if (typeof value !== "string") fail(`\`${key}\` phải là một dòng chữ (danh sách thì cách nhau bằng dấu phẩy)`);
+    if (!PLAYBOOK_FIELDS.has(key)) fail(`the field \`${key}\` is not supported; use only: ${[...PLAYBOOK_FIELDS].join(", ")}`);
+    else if (typeof value !== "string") fail(`\`${key}\` must be one line of text (separate list items with commas)`);
   }
   const field = (key) => (typeof parsed[key] === "string" ? parsed[key].trim() : "");
-  if (field("name") !== folder) fail(`name phải trùng tên thư mục: \`name: ${folder}\``);
-  if (!text(field("title"), 100)) fail("title là bắt buộc (tên hiển thị, tối đa 100 ký tự)");
-  if (!text(field("description"), 300)) fail("description là bắt buộc (một câu, tối đa 300 ký tự)");
+  if (field("name") !== folder) fail(`name must match the folder name: \`name: ${folder}\``);
+  if (!text(field("title"), 100)) fail("title is required (the display name, at most 100 characters)");
+  if (!text(field("description"), 300)) fail("description is required (one sentence, at most 300 characters)");
   const triggers = commaList(field("triggers"));
   if (triggers.length === 0 || triggers.length > 30 || triggers.some((trigger) => trigger.length > 100)) {
-    fail("triggers cần 1-30 cụm từ cách nhau bằng dấu phẩy, mỗi cụm tối đa 100 ký tự");
+    fail("triggers needs 1-30 comma-separated phrases of at most 100 characters");
   }
   const tags = commaList(field("tags"));
-  if (tags.length > 8 || tags.some((tag) => !TAG.test(tag))) fail("tags tối đa 8 từ chữ thường, cách nhau bằng dấu phẩy");
-  if (!text(field("license"), 200)) fail("license là bắt buộc");
-  if (!text(field("author"), 100)) fail("author là bắt buộc");
+  if (tags.length > 8 || tags.some((tag) => !TAG.test(tag))) fail("tags allows at most 8 lowercase comma-separated words");
+  if (!text(field("license"), 200)) fail("license is required");
+  if (!text(field("author"), 100)) fail("author is required");
   const body = front.body.trim();
-  if (body.length < 100) fail("phần thân cần mô tả quy trình (ít nhất 100 ký tự)");
-  if (body.length > PLAYBOOK_BODY_MAX) fail(`phần thân tối đa ${PLAYBOOK_BODY_MAX} ký tự`);
+  if (body.length < 100) fail("the body must describe the procedure (at least 100 characters)");
+  if (body.length > PLAYBOOK_BODY_MAX) fail(`the body allows at most ${PLAYBOOK_BODY_MAX} characters`);
   // QACI Duo shows these to the reviewer as warnings; here they block the merge.
-  if (/[A-Za-z0-9+/]{120,}={0,2}/.test(raw)) fail("có chuỗi giống base64 dài, cách thường dùng để giấu chỉ dẫn");
-  if (/\b(curl|wget)\b[^\n]{0,200}\|\s*(ba|z|da)?sh\b/.test(raw)) fail("tải file rồi chạy thẳng bằng shell (curl | sh)");
-  if (/[​-‏‪-‮⁠-⁤﻿]/.test(raw.slice(1))) fail("có ký tự Unicode vô hình (zero-width hoặc bidi)");
+  if (/[A-Za-z0-9+/]{120,}={0,2}/.test(raw)) fail("contains a long base64-like string, a common way to hide instructions");
+  if (/\b(curl|wget)\b[^\n]{0,200}\|\s*(ba|z|da)?sh\b/.test(raw)) fail("pipes a download straight into a shell (curl | sh)");
+  if (/[​-‏‪-‮⁠-⁤﻿]/.test(raw.slice(1))) fail("contains invisible Unicode characters (zero-width or bidi controls)");
   return errors;
 }
 
@@ -291,7 +291,7 @@ export function section(body, heading) {
 export function validateWorker(markdown, slug, playbookNames) {
   const errors = [];
   const fail = (message) => errors.push(message);
-  if (!SLUG.test(slug)) fail(`tên file "${slug}.md" phải là chữ thường, số và dấu gạch ngang`);
+  if (!SLUG.test(slug)) fail(`the file name "${slug}.md" must use lowercase letters, digits and hyphens`);
   let worker;
   let body;
   try {
@@ -299,39 +299,39 @@ export function validateWorker(markdown, slug, playbookNames) {
   } catch (error) {
     return [...errors, error.message];
   }
-  for (const key of Object.keys(worker)) if (!WORKER_FIELDS.has(key)) fail(`trường \`${key}\` không được hỗ trợ`);
-  for (const at of credentialFields(worker, "", [])) fail(`trường \`${at}\` trông như thông tin đăng nhập; DW không được mang token hay mật khẩu`);
-  for (const heading of WORKER_SECTIONS) if (!section(body, heading)) fail(`thiếu mục \`## ${heading}\` (có nội dung) trong phần thân`);
+  for (const key of Object.keys(worker)) if (!WORKER_FIELDS.has(key)) fail(`the field \`${key}\` is not supported`);
+  for (const at of credentialFields(worker, "", [])) fail(`the field \`${at}\` looks like a credential; a Digital Worker never carries tokens or passwords`);
+  for (const heading of WORKER_SECTIONS) if (!section(body, heading)) fail(`the body is missing a non-empty \`## ${heading}\` section`);
 
-  if (worker.id !== slug) fail(`id phải trùng tên file: \`id: ${slug}\``);
-  if (!/^\d+\.\d+\.\d+$/.test(String(worker.release ?? ""))) fail("release phải theo dạng 1.0.0");
-  if (!text(worker.name, 100)) fail("name là bắt buộc (tối đa 100 ký tự)");
-  if (!text(worker.title, 200)) fail("title là bắt buộc (vai trò, tối đa 200 ký tự)");
-  if (!text(worker.tagline, 160)) fail("tagline là bắt buộc (tối đa 160 ký tự)");
-  if (!text(worker.description, 2000)) fail("description là bắt buộc (DW làm gì và không làm gì, tối đa 2000 ký tự)");
-  if (!text(worker.category, 80)) fail("category là bắt buộc");
-  if (!text(worker.author?.name, 100)) fail("author.name là bắt buộc");
-  if (!text(worker.license, 80)) fail("license là bắt buộc");
-  if (worker.tags !== undefined && (!list(worker.tags, 30) || worker.tags.some((tag) => !text(tag, 80)))) fail("tags tối đa 30 từ");
-  if (!COLORS.has(worker.color)) fail(`color phải là một trong: ${[...COLORS].join(", ")}`);
-  if (worker.featured !== undefined && typeof worker.featured !== "boolean") fail("featured là true hoặc false");
+  if (worker.id !== slug) fail(`id must match the file name: \`id: ${slug}\``);
+  if (!/^\d+\.\d+\.\d+$/.test(String(worker.release ?? ""))) fail("release must be a semantic version such as 1.0.0");
+  if (!text(worker.name, 100)) fail("name is required (at most 100 characters)");
+  if (!text(worker.title, 200)) fail("title is required (the role, at most 200 characters)");
+  if (!text(worker.tagline, 160)) fail("tagline is required (at most 160 characters)");
+  if (!text(worker.description, 2000)) fail("description is required (what the worker does and does not do, at most 2000 characters)");
+  if (!text(worker.category, 80)) fail("category is required");
+  if (!text(worker.author?.name, 100)) fail("author.name is required");
+  if (!text(worker.license, 80)) fail("license is required");
+  if (worker.tags !== undefined && (!list(worker.tags, 30) || worker.tags.some((tag) => !text(tag, 80)))) fail("tags allows at most 30 entries");
+  if (!COLORS.has(worker.color)) fail(`color must be one of: ${[...COLORS].join(", ")}`);
+  if (worker.featured !== undefined && typeof worker.featured !== "boolean") fail("featured must be true or false");
   if (!list(worker.outcomes, 12) || worker.outcomes.length === 0 || worker.outcomes.some((value) => !text(value, 240))) {
-    fail("outcomes cần 1-12 dòng, mỗi dòng tối đa 240 ký tự");
+    fail("outcomes needs 1-12 lines of at most 240 characters");
   }
   if (worker.setupMinutes !== undefined && (!Number.isInteger(worker.setupMinutes) || worker.setupMinutes < 1 || worker.setupMinutes > 240)) {
-    fail("setupMinutes phải là số phút từ 1 đến 240");
+    fail("setupMinutes must be a whole number of minutes from 1 to 240");
   }
-  if (worker.apps !== undefined && !list(worker.apps, 30)) fail("apps tối đa 30 ứng dụng");
+  if (worker.apps !== undefined && !list(worker.apps, 30)) fail("apps allows at most 30 entries");
   for (const [index, app] of (Array.isArray(worker.apps) ? worker.apps : []).entries()) {
-    if (!text(app?.slug, 64) || !KEY.test(app.slug) || !text(app?.label, 100) || !text(app?.reason, 240)) fail(`apps[${index}] cần slug, label và reason`);
+    if (!text(app?.slug, 64) || !KEY.test(app.slug) || !text(app?.label, 100) || !text(app?.reason, 240)) fail(`apps[${index}] needs slug, label and reason`);
   }
-  if (!list(worker.playbooks, 30) || worker.playbooks.length === 0) fail("playbooks cần 1-30 playbook");
+  if (!list(worker.playbooks, 30) || worker.playbooks.length === 0) fail("playbooks needs 1-30 entries");
   else {
     const seen = new Set();
     for (const name of worker.playbooks) {
-      if (seen.has(name)) fail(`playbook "${name}" bị lặp`);
+      if (seen.has(name)) fail(`playbook "${name}" is listed twice`);
       seen.add(name);
-      if (!playbookNames.has(name)) fail(`playbook "${name}" không có trong playbooks/${name}/SKILL.md`);
+      if (!playbookNames.has(name)) fail(`playbook "${name}" does not exist as playbooks/${name}/SKILL.md`);
     }
   }
   return errors;
@@ -385,7 +385,7 @@ export function workerPackage(markdown, playbooksByName) {
     "",
     worker.tagline,
     "",
-    `> Digital Worker của QACI Duo, sinh tự động từ \`workers/${worker.id}.md\` và \`playbooks/*/SKILL.md\`. Đừng sửa file này; mở pull request vào \`main\`.`,
+    `> A QACI Duo Digital Worker, generated from \`workers/${worker.id}.md\` and \`playbooks/*/SKILL.md\`. Do not edit this file; open a pull request against \`main\`.`,
     "",
     "## Activation",
     "",
@@ -401,7 +401,7 @@ export function workerPackage(markdown, playbooksByName) {
     "",
     "## Connections",
     "",
-    ...(apps.length ? apps.map((app) => `- **${app.label}**${app.optional ? " (tùy chọn)" : ""}: ${app.reason}`) : ["Không cần kết nối ứng dụng."]),
+    ...(apps.length ? apps.map((app) => `- **${app.label}**${app.optional ? " (optional)" : ""}: ${app.reason}`) : ["No app connections are needed."]),
     "",
     "## Team",
     "",
@@ -409,7 +409,7 @@ export function workerPackage(markdown, playbooksByName) {
     "",
     "## Chief of Staff",
     "",
-    `\`${worker.id}\` (${worker.name}) là DW duy nhất: nhận việc, chọn playbook phù hợp và trả lời người dùng.`,
+    `\`${worker.id}\` (${worker.name}) is the only agent: it takes the request, picks the right playbook and answers the user.`,
     "",
     "## Playbooks",
     "",
@@ -454,7 +454,7 @@ export function workerLibraryFiles(markdown, playbooksByName) {
     "",
     ...playbooks.map((playbook) => `- **${playbook.title}** — ${playbook.description} ([SKILL.md](../../playbooks/${playbook.name}/SKILL.md))`),
     "",
-    `Nguồn: \`workers/${id}.md\` trên nhánh \`main\`.`,
+    `Source: \`workers/${id}.md\` on \`main\`.`,
     "",
   ].join("\n");
   const entry = {

@@ -1,29 +1,34 @@
-name: Đề xuất playbook
-description: Có ý tưởng cho một playbook hoặc Digital Worker nhưng không muốn tự viết file? Mô tả ở đây.
-title: "[Ý tưởng] "
+name: Playbook idea
+description: Have an idea for a playbook or a Digital Worker but no time to write it? Describe it here.
+title: "[Idea] "
 labels: ["playbook-idea"]
 body:
   - type: textarea
     id: outcome
     attributes:
-      label: Playbook này giúp làm được việc gì?
-      description: Kết quả cuối cùng bạn cần, càng cụ thể càng tốt.
+      label: What should the playbook get done?
+      description: The end result you need, as concretely as possible.
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Hiện tại bạn làm việc này thế nào?
-      description: Các bước, công cụ, ai duyệt.
+      label: How do you do this today?
+      description: The steps, tools and sources you use, and who reviews the result.
   - type: textarea
     id: approvals
     attributes:
-      label: Việc nào bắt buộc phải có người duyệt?
-      description: Ví dụ gửi email, nộp bài, xoá dữ liệu, chạy job tốn tài nguyên.
+      label: What must always wait for a person?
+      description: For example sending emails, submitting a paper, deleting data, running costly jobs.
+  - type: input
+    id: worker
+    attributes:
+      label: Which worker should carry it?
+      description: An existing worker, or a new one you have in mind.
   - type: checkboxes
     id: safety
     attributes:
-      label: An toàn
+      label: Safety
       options:
-        - label: Tôi không dán token, mật khẩu hay dữ liệu cá nhân vào issue này
+        - label: I have not pasted tokens, passwords or personal data into this issue
           required: true

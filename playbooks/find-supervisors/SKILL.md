@@ -1,40 +1,81 @@
 ---
 name: find-supervisors
-title: Tìm giáo sư hướng dẫn phù hợp
-description: Tìm giáo sư hoặc lab phù hợp với hướng nghiên cứu, từ một mô tả ngắn hoặc từ CV và research statement, có bằng chứng cho từng đề xuất.
-triggers: tìm giáo sư, tìm supervisor, tìm lab, apply PhD, giáo sư phù hợp
+title: Find suitable supervisors
+description: Find professors or labs that fit a research direction, from either a short description or a CV and research statement, with recent papers as evidence and a dated check of whether each is taking students.
+triggers: find a supervisor, find a PhD advisor, which labs fit me, find professors, PhD application, where should I apply
 tags: research, phd, application
 license: MIT
 author: QACI
 ---
 
-# Tìm giáo sư hướng dẫn phù hợp
+# Find suitable supervisors
 
-## Khi nào dùng
+Builds a shortlist of potential supervisors where every match is backed by the person's recent work, and every fact about availability carries the date it was checked.
 
-Chuẩn bị apply PhD hoặc tìm lab để cộng tác.
+## When to use
 
-## Đầu vào cần có
+- Preparing PhD, master's or research-internship applications.
+- Looking for a lab to collaborate with.
+- **Not for:** writing emails or statements (use `mentor-outreach`).
 
-Một trong hai chế độ:
+## Inputs
 
-- **Chỉ mô tả:** vài câu về hướng nghiên cứu muốn theo. Nhanh và rộng.
-- **CV và research statement:** chính xác hơn vì khớp được với kinh nghiệm thật.
+Two modes; ask which one the user wants.
 
-Hỏi thêm: quốc gia hoặc trường ưu tiên, kỳ nhập học, yêu cầu học bổng.
+| Mode | Input | Trade-off |
+|---|---|---|
+| Prompt only | A few sentences on the research direction | Fast and broad; matches are by topic only |
+| CV and statement | CV plus research statement or a draft | Slower, more precise; matches against real experience |
 
-## Các bước
+Also ask: countries or universities preferred or excluded, intake term, funding needs, and any language or visa constraints.
 
-1. Rút ra 3-5 chủ đề cốt lõi và từ khoá từ đầu vào.
-2. Tìm người qua tác giả của paper 2-3 năm gần đây đúng chủ đề ở venue uy tín, trang lab và danh sách giảng viên của khoa.
-3. Với mỗi ứng viên, kiểm tra: còn nhận sinh viên không (trang lab, mục prospective students), paper gần nhất, nguồn tài trợ, sinh viên hiện tại.
-4. Chấm độ phù hợp theo chủ đề, phương pháp, dữ liệu và vị trí, kèm 1-2 paper làm bằng chứng.
+## Procedure
 
-## Kết quả trả về
+1. **Extract the profile.** From the input, list 3–5 core topics, the methods the user knows, the data they have worked with, and keywords. Confirm the list with the user.
+2. **Find people through their work.**
+   - authors of papers from the last 2–3 years on those topics at well-regarded venues;
+   - lab pages and department faculty lists;
+   - co-authors of the strongest matches.
+3. **Check each candidate.**
+   - recent papers (last two years) and their direction;
+   - whether they are recruiting (lab page, "prospective students" page, recent announcements) and the date checked;
+   - current students and group size where visible;
+   - funding signals (grants, positions advertised).
+4. **Score the fit** 1–5 on topic, methods, data and practical constraints (location, intake, funding), with one line per score and 1–2 papers as evidence.
+5. **Rank and tier.** Group into *strong match*, *good match* and *stretch*, aiming for 10–20 candidates overall.
+6. **Flag uncertainty.** Mark anything not confirmed on an official page.
 
-Bảng 10-20 ứng viên: tên, trường, link trang, paper liên quan, lý do phù hợp, tình trạng nhận sinh viên, mức ưu tiên và ngày kiểm tra.
+## Output
 
-## Không được làm
+```markdown
+## Supervisor shortlist: <direction> (checked <date>)
 
-- Không bịa tên hay thông tin; không đoán email.
-- Ghi ngày kiểm tra vì thông tin tuyển sinh thay đổi nhanh.
+<Two sentences: how many candidates, where the strongest matches are.>
+
+| Tier | Name | University / lab | Link | Matching papers | Why it fits | Recruiting? (source, date) |
+|---|---|---|---|---|---|---|
+
+### Profile used
+Topics: … Methods: … Data: …
+
+### Not confirmed
+- <items that need checking on an official page>
+```
+
+## Quality checklist
+
+- [ ] Every candidate has an official page link and at least one recent matching paper.
+- [ ] Recruiting status cites a source and a date, or says "unknown".
+- [ ] Fit reasons are specific to the person's work, not generic.
+
+## Guardrails
+
+- **Never:** invent people, affiliations, papers or recruiting status.
+- **Never:** guess email addresses; link to the official page instead.
+- **Ask first:** before widening the search beyond the user's stated countries or constraints.
+
+## Example
+
+**Request:** "I've worked on ECG deep learning and want a PhD in trustworthy medical AI in Europe, starting next autumn."
+
+**Response outline:** confirmed profile, 14 candidates in three tiers with two recent papers each, recruiting status with dates (five confirmed, nine unknown), and a list of facts to verify on official pages.

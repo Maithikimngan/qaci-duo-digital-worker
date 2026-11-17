@@ -1,21 +1,22 @@
-## Thay đổi
+## Change
 
-<!-- Playbook hoặc DW nào, giúp người dùng làm được việc gì. -->
+<!-- Which playbook or worker, and what it lets a user get done. -->
 
-## Kiểm tra
+## Checklist
 
-- [ ] Chỉ sửa `playbooks/<ten>/SKILL.md` và/hoặc `workers/<dw>.md`
-- [ ] `name` trùng tên thư mục, `id` trùng tên file
-- [ ] Tăng `release` của DW nếu thay đổi playbook nó mang
-- [ ] `npm test` chạy xanh (hoặc CI của PR này xanh)
-- [ ] Đã thử trong QACI Duo (Skills library hoặc Templates → Import)
+- [ ] Only `playbooks/<name>/SKILL.md` and/or `workers/<worker>.md` changed (plus README if a table changed)
+- [ ] `name` matches the folder; `id` matches the file name
+- [ ] The `release` of every affected worker is bumped
+- [ ] The playbook has every section in FORMAT.md, with *Check:* lines and an *Output* template
+- [ ] `npm test` passes (or the CI check on this pull request is green)
+- [ ] Tried in QACI Duo (Skills library or Templates → Import)
 
-## An toàn
+## Safety
 
-- [ ] Không có token, mật khẩu, dữ liệu cá nhân, file nhị phân hay script
-- [ ] Mục **Không được làm** nêu rõ việc cần người duyệt (gửi, nộp, xoá, chạy job lớn)
-- [ ] DW được yêu cầu dẫn nguồn, không bịa paper hay số liệu
+- [ ] No tokens, passwords, personal data, internal names, binaries or scripts
+- [ ] *Guardrails* covers actions that need approval (sending, submitting, deleting, costly runs)
+- [ ] The worker is told to cite sources and never invent papers, numbers or people
 
-## Đã thử với việc gì
+## Tried on
 
-<!-- Một yêu cầu thực tế bạn đã giao và kết quả. -->
+<!-- A real request you gave the worker and what came back. -->

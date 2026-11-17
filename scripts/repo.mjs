@@ -27,7 +27,7 @@ export function loadRepository(root, paths) {
     if (splitPackage(markdown).metadata.playbooks.some((name) => !playbooks.has(name))) continue; // reported above
     // The generated package must pass the same checks a hand-written BotMRR file would.
     const generated = validatePackage(workerPackage(markdown, playbooks), id);
-    for (const problem of generated) errors.push(`${path}: gói sinh ra không hợp lệ: ${problem}`);
+    for (const problem of generated) errors.push(`${path}: the generated package is invalid: ${problem}`);
     if (generated.length === 0) workers.push({ id, path, markdown });
   }
   return { playbooks, workers, errors };

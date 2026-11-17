@@ -1,52 +1,62 @@
-# Đóng góp playbook và Digital Worker
+# Contributing
 
-## Bạn muốn làm gì?
+Thank you for helping QACI Duo's Digital Workers get better at real work.
 
-| Việc | File bạn sửa |
+## What do you want to do?
+
+| Goal | What to change |
 |---|---|
-| Thêm một khả năng mới | Tạo `playbooks/<ten-playbook>/SKILL.md` (copy từ `templates/playbook/SKILL.md`). Muốn DW nào dùng thì thêm tên playbook vào `playbooks:` của `workers/<dw>.md`. |
-| Cải thiện playbook có sẵn | Sửa `playbooks/<ten>/SKILL.md`. |
-| Tạo Digital Worker mới | Tạo `workers/<ten-dw>.md` (copy từ `templates/worker.md`) và liệt kê các playbook nó mang. |
+| Add a capability | Create `playbooks/<your-playbook>/SKILL.md` from [`templates/playbook/SKILL.md`](templates/playbook/SKILL.md). To have a worker carry it, add its name under `playbooks:` in `workers/<worker>.md` and bump that worker's `release`. |
+| Improve a playbook | Edit `playbooks/<name>/SKILL.md` and bump the `release` of every worker that carries it. |
+| Propose a new worker | Create `workers/<your-worker>.md` from [`templates/worker.md`](templates/worker.md) and list the playbooks it carries. |
 
-Một playbook là **một quy trình làm được việc cụ thể**, không phải một vai trò. "Viết rebuttal" là playbook; "người
-viết paper" là DW.
+A playbook is **one procedure that produces a result** — "write a rebuttal", "verify agent-written code". A worker is a
+**role** that carries several playbooks — "Paper Writer". If you are describing a role, you are writing a worker.
 
-## Các bước
+## Steps
 
-1. Fork repo, tạo nhánh mới.
-2. Viết file theo [FORMAT.md](FORMAT.md). Tên thư mục playbook và `name:` phải giống nhau; tên file DW và `id:` phải
-   giống nhau.
-3. Chạy kiểm tra ở máy (Node 20 trở lên):
+1. Fork the repository and create a branch.
+2. Write your files following [FORMAT.md](FORMAT.md). A playbook's folder and its `name` must match; a worker's file
+   name and its `id` must match.
+3. Run the checks locally (Node 20 or later):
 
    ```sh
    npm ci --ignore-scripts
    npm test
+   npm run build   # optional: writes the generated library to dist/
    ```
 
-4. Mở pull request vào `main` và điền checklist.
+4. Open a pull request against `main` and complete the checklist.
 
-## Thử trước khi mở pull request
+## Try it before you open a pull request
 
-- **Một playbook:** copy toàn bộ `SKILL.md`, dán vào **Settings → Skills → Import a skill** trong QACI Duo (cần bật
-  **Advanced mode**), bật skill, **Assign** cho một DW và giao cho nó một việc thật.
-- **Cả một DW:** chạy `npm run build`, đẩy nhánh lên fork, rồi trong QACI Duo vào **+ → Templates → Import** và dán link
-  GitHub của `dist/packages/<dw>.md`. Hoặc dán link sau khi đã đẩy file đó lên một nhánh của fork.
+- **One playbook:** paste the whole `SKILL.md` into QACI Duo under **Settings → Skills → Import a skill** (turn on
+  **Advanced mode** to see *Skills*), switch it on, **Assign** it to a worker, and give the worker a real task.
+- **A whole worker:** run `npm run build`, commit `dist/packages/<worker>.md` to a branch of your fork, and paste its
+  GitHub link into QACI Duo under **+ → Templates → Import**.
 
-## Quy trình review
+## Review
 
-| Bước | Ai | Điều gì xảy ra |
+| Step | Who | What happens |
 |---|---|---|
-| Mở pull request | Người đóng góp | CI `validate` chạy: định dạng, layout repo, quét secret, gói DW sinh ra phải hợp lệ |
-| Review | Code owner (`.github/CODEOWNERS`) | Đọc nội dung: quy trình có đúng, có an toàn, có giới hạn việc cần người duyệt không |
-| Merge vào `main` | Code owner | Chỉ merge được khi CI xanh và có approve |
-| Publish | Workflow `Publish library` | Sinh lại nhánh `library` trong khoảng một phút |
-| Có trên QACI Duo | Người dùng | Thấy thay đổi sau tối đa ~5 phút (GitHub cache file raw) |
+| Pull request opened | Contributor | CI `validate` checks the format, the repository layout, secrets, hidden-instruction tricks, and the package generated for each worker |
+| Review | Code owner (see `.github/CODEOWNERS`) | Reads the content: is the procedure correct, safe, specific, and does it stop before actions that need approval? |
+| Merge to `main` | Code owner | Possible only with a green check and an approval |
+| Publish | `Publish library` workflow | Regenerates the `library` branch within about a minute |
+| Available in QACI Duo | Users | Visible within about five minutes (GitHub caches raw files) |
 
-## Viết playbook tốt
+## What reviewers look for
 
-- Mỗi bước đủ cụ thể để người khác làm lại được và có cách kiểm tra.
-- Nói rõ đầu vào phải hỏi trước, và kết quả trả về ở dạng nào.
-- Có mục **Không được làm**: việc nào DW không tự làm khi chưa có người duyệt (gửi email, nộp bài, xoá dữ liệu,
-  chạy job tốn tài nguyên).
-- Yêu cầu dẫn nguồn và tách điều đã kiểm khỏi suy đoán; không để DW bịa paper hay số liệu.
-- Không đưa tên người, tên dự án nội bộ hay dữ liệu thật vào ví dụ.
+- **Specific steps.** Each step is concrete enough for someone else to repeat and has a *Check:* line.
+- **Inputs first.** The playbook says what to ask before starting, and the default when an input is missing.
+- **A defined output.** The *Output* section shows the exact shape of the result.
+- **Evidence.** The worker is told to cite sources and to separate verified facts from inference; it never invents
+  papers, numbers or people.
+- **Guardrails.** *Never* and *Ask first* lists cover sending, submitting, deleting and running costly jobs.
+- **No private data.** No names of colleagues, internal projects, customer or patient data, links with credentials.
+- **Plain English.** Short sentences, active voice, consistent terms.
+
+## Commit messages
+
+Write commit messages and pull request titles in English, in the imperative mood: "Add rebuttal playbook to Paper
+Writer", "Clarify inputs of survey-a-field".

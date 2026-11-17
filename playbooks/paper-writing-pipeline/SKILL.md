@@ -1,41 +1,96 @@
 ---
 name: paper-writing-pipeline
-title: Quy trình viết paper
-description: Dựng quy trình viết paper bằng LaTeX từ dàn ý đến bản hoàn chỉnh, kiểm tra nhất quán và đối chiếu paper với code để mọi con số đều có nguồn.
-triggers: viết paper, LaTeX, dàn ý paper, kiểm tra nhất quán, paper khớp code
+title: Write a paper in LaTeX, end to end
+description: Set up a LaTeX writing pipeline from outline to full draft, keep the authors' voice, run consistency checks, and verify every number and implementation detail in the paper against the code and result files.
+triggers: write the paper, set up LaTeX, paper outline, consistency check, does the paper match the code, prepare for reviewers
 tags: research, writing, latex
 license: MIT
 author: QACI
 ---
 
-# Quy trình viết paper
+# Write a paper in LaTeX, end to end
 
-## Khi nào dùng
+Takes the authors from notes and results to a consistent draft whose every number can be traced to a result file and commit, written in their voice rather than generic prose.
 
-Bắt đầu viết paper hoặc chuẩn bị nộp và cần chắc chắn paper nhất quán và khớp với code.
+## When to use
 
-## Đầu vào cần có
+- Starting a paper, or restructuring a draft.
+- Before submission, to catch inconsistencies and paper–code mismatches.
+- **Not for:** figures (use `generate-figures`) or answering reviews (use `rebuttal`).
 
-- Venue và template; ghi chú, kết quả và hình đã có.
-- Repo code và các file kết quả.
+## Inputs
 
-## Các bước
+| Input | Required | Notes |
+|---|---|---|
+| Target venue | yes | Template, page limit, anonymity rules |
+| Notes, results and figures | yes | Whatever exists; gaps become TODOs |
+| The code repository and result files | yes | For paper–code verification |
+| The authors' own writing | no | Earlier papers or paragraphs, to match their voice |
 
-1. Cài đặt: template của venue; thư mục `sections/`, `figures/`, `tables/`; macro cho tên phương pháp và số liệu lặp lại; BibTeX lấy từ nguồn chính thức (DBLP, trang venue).
-2. Dàn ý: mỗi section một đoạn ý chính; contributions dạng bullet, mỗi ý trỏ tới thí nghiệm chứng minh nó.
-3. Viết nháp từng section theo giọng văn của tác giả, dựa trên ghi chú và câu tác giả đã viết. Chỗ thiếu bằng chứng đánh dấu `[TODO]` thay vì bịa.
-4. Kiểm tra nhất quán: thuật ngữ và ký hiệu, tên dataset và metric, số liệu giữa abstract, intro và bảng, tham chiếu hình, bảng và section, citation đều có trong file `.bib`.
-5. Đối chiếu paper với code: mỗi con số trong bảng truy được về file kết quả và commit; mỗi chi tiết cài đặt (learning rate, batch, epoch, kiến trúc) khớp file cấu hình.
-6. Chuẩn bị trước reviewer: liệt kê 5-10 câu hỏi dễ bị hỏi và chỗ paper đã trả lời.
+## Procedure
 
-## Kết quả trả về
+1. **Set up the project.**
+   - the venue's official template; folders `sections/`, `figures/`, `tables/`;
+   - macros for the method name and for numbers repeated across sections;
+   - BibTeX entries from official sources (DBLP, the publisher, the venue), never typed from memory;
+   - a build command that compiles without warnings.
+2. **Outline.** One paragraph per section stating its point. Write the contributions as bullets, each pointing to the experiment or section that supports it.
+   - *Check:* the authors approve the contributions before drafting.
+3. **Draft in the authors' voice.** Build each section from their notes and sentences. Where evidence is missing, insert `\todo{...}` with what is needed instead of inventing it.
+4. **Consistency pass.**
+   - terminology and notation identical everywhere; symbols defined before use;
+   - dataset, metric and method names consistent with tables and figures;
+   - numbers in abstract, introduction, tables and conclusion agree;
+   - every figure, table and section reference resolves; every citation exists in the `.bib`;
+   - claims in the introduction are each backed by a result.
+5. **Paper–code verification.**
+   - every number in a table traces to a result file and a commit;
+   - every implementation detail (learning rate, batch size, epochs, architecture, preprocessing, splits) matches the config actually used;
+   - list mismatches with both values and their sources.
+6. **Reviewer defence.** List the 5–10 questions reviewers are most likely to ask and where the paper answers each; mark the unanswered ones.
+7. **Final checks.** Page limit, anonymity (no names, acknowledgements or identifying links in a blind submission), supplementary material references.
 
-- Dự án LaTeX biên dịch được.
-- Bảng đối chiếu "số liệu → file kết quả → commit".
-- Danh sách điểm chưa nhất quán và câu hỏi reviewer dự kiến.
+## Output
 
-## Không được làm
+```markdown
+## Paper status: <title>
 
-- Không bịa citation hay số liệu.
-- Không tự thêm đóng góp mà tác giả chưa xác nhận.
-- Không nộp bài thay tác giả.
+**Compiles:** yes/no. **Pages:** x / limit. **Open TODOs:** n.
+
+### Contributions → evidence
+| Contribution | Supported by |
+|---|---|
+
+### Consistency issues
+| Location | Issue | Suggested fix |
+|---|---|---|
+
+### Paper vs. code
+| Paper says | Code / results say | Source | Action |
+|---|---|---|---|
+
+### Likely reviewer questions
+| Question | Answered where | Gap |
+|---|---|---|
+```
+
+## Quality checklist
+
+- [ ] The draft compiles cleanly.
+- [ ] Every table number traces to a result file and commit.
+- [ ] Every citation key comes from an official source.
+- [ ] No contribution is claimed that the authors have not approved.
+- [ ] Anonymity rules are respected for blind review.
+
+## Guardrails
+
+- **Never:** invent citations, results or implementation details.
+- **Never:** add a contribution or claim the authors have not confirmed.
+- **Never:** submit the paper; submission is the authors' action.
+- **Ask first:** before rewriting a section the authors wrote themselves, beyond small fixes.
+
+## Example
+
+**Request:** "Here's our results folder and notes for a workshop paper on ECG pretraining. Set up the paper and check it against the code."
+
+**Response outline:** template project with macros, outline with four contributions mapped to experiments, drafted method section with two TODOs, consistency report (two metric-name mismatches), paper–code table showing the paper says 50 epochs while the config ran 40, eight likely reviewer questions.

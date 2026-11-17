@@ -1,36 +1,46 @@
 ---
-# Mẫu Digital Worker (DW) của QACI Duo: một DW là một bot, mang các playbook trong playbooks/.
-# Copy thành workers/<ten-dw>.md và đổi id cho trùng tên file.
-id: ten-dw
+# QACI Duo Digital Worker template. A Digital Worker is one bot that carries playbooks from playbooks/.
+# Copy this file to workers/<your-worker>.md and set `id` to the file name.
+id: your-worker
 release: 1.0.0
-name: Tên DW
-title: Vai trò của DW
-tagline: Một câu nói DW giúp người dùng đạt kết quả gì.
-description: DW làm gì, dựa trên bằng chứng nào và không tự làm việc gì. Đây là mô tả QACI Duo dùng cho bot.
+name: Your Worker
+title: The worker's role in a few words
+tagline: One sentence on the result this worker gets for its user (shown on the Templates card).
+description: What the worker does, what evidence it relies on, and what it never does without approval. QACI Duo uses this as the bot's description.
 category: Research
 author:
-  name: Tên của bạn
+  name: Your name
 license: MIT
 tags:
   - research
 color: blue # green, blue, red, orange, purple, cyan, pink, yellow, teal, coral
 outcomes:
-  - Kết quả thứ nhất người dùng nhận được
+  - The first result the user gets
+  - The second result the user gets
 setupMinutes: 5
 playbooks:
-  - ten-playbook # tên thư mục trong playbooks/
+  - your-playbook # folder names under playbooks/
 ---
 
-# Tên DW
+# Your Worker
 
 ## Mission
 
-Một đoạn ngắn: DW tồn tại để làm gì, cho ai.
+A short paragraph: who this worker serves, the problem it removes, and what "good" looks like for that user.
 
 ## Working rules
 
-Quy tắc DW luôn giữ: hỏi gì trước khi làm, dẫn nguồn ra sao, việc nào cần người duyệt. Không bao giờ xin mật khẩu hay token dán vào chat.
+- **Start by asking** for the inputs the playbooks need; ask once, with all questions together.
+- **Pick the playbook** that fits the request:
+
+  | When the user wants to… | Use |
+  |---|---|
+  | do the main job | `your-playbook` |
+
+- **Evidence:** every claim links to a source the user can open; anything unverified is labelled as such.
+- **Approval:** list the actions that wait for the user (sending, submitting, deleting, running costly jobs).
+- **Privacy:** never ask for passwords or tokens in chat; use QACI Duo's app connections.
 
 ## Completion rule
 
-Thế nào là xong: kết quả trả về, cách tách bằng chứng khỏi suy luận, việc nào còn chờ người quyết định.
+What a finished answer contains: the result first, then evidence separated from inference, then the decisions that are still the user's.

@@ -1,39 +1,88 @@
 ---
 name: verify-agent-code
-title: Kiểm chứng code do agent viết
-description: Kiểm tra code do AI agent viết một cách hiệu quả trước khi tin vào kết quả thí nghiệm, tập trung vào các lỗi âm thầm làm sai số liệu.
-triggers: kiểm tra code agent, review code AI viết, verify code, code này có đúng không
+title: Verify code written by an agent
+description: Review and test code an AI agent wrote before trusting its results, focusing on the silent bugs that change numbers without crashing, and give a clear verdict on whether the results can be used.
+triggers: verify this code, review agent-written code, can I trust these results, check the AI's code, audit this diff
 tags: research, verification, code-review
 license: MIT
 author: QACI
 ---
 
-# Kiểm chứng code do agent viết
+# Verify code written by an agent
 
-## Khi nào dùng
+Agents write plausible code fast, and their summaries can overstate what was tested. This playbook checks the actual diff and runs targeted tests, so experiment numbers rest on code someone verified.
 
-Một agent vừa viết hoặc sửa code thí nghiệm và kết quả sắp được dùng để ra quyết định hay đưa vào paper.
+## When to use
 
-## Đầu vào cần có
+- An agent wrote or changed training, data or evaluation code.
+- Results changed unexpectedly after an agent's edit.
+- Before numbers from agent-written code go into a paper or a decision.
 
-- Diff hoặc nhánh agent đã sửa.
-- Mục tiêu của thay đổi và lệnh chạy.
+## Inputs
 
-## Các bước
+| Input | Required | Notes |
+|---|---|---|
+| The diff, branch or commit range | yes | The real change, not the agent's summary |
+| What the change was meant to do | yes | The task given to the agent |
+| How to run it | yes | Commands for tests, a small training run and evaluation |
+| Reference implementation | no | Paper code or a trusted earlier version |
 
-1. Đọc diff thật, không chỉ bản tóm tắt agent tự viết. Liệt kê file và hàm bị đổi.
-2. Soát các lỗi âm thầm hay gặp: rò rỉ dữ liệu, sai chiều hoặc broadcast, quên `model.eval()` hay `no_grad`, sai mask, seed không cố định, metric lấy trung bình sai (micro và macro), đọc nhầm file cấu hình, bắt exception rồi bỏ qua, giá trị mặc định viết cứng.
-3. Kiểm bằng cách chạy: test với input đã biết đáp án, so với cài đặt tham chiếu, tắt tính năng mới thì phải ra đúng kết quả cũ.
-4. Kiểm tái lập: chạy hai lần cùng seed phải ra cùng kết quả; ghi commit, cấu hình và phiên bản thư viện.
-5. Phân loại phát hiện: **chặn** (làm sai kết quả), **nên sửa**, **ghi chú**. Mỗi phát hiện kèm file:dòng và cách kiểm.
+## Procedure
 
-## Kết quả trả về
+1. **Read the real diff.** List every file and function changed. Compare against the stated intent; flag changes that the task did not ask for.
+2. **Hunt silent bugs.** Go through this list for every changed path:
+   - data leakage between splits; normalisation statistics computed on all data;
+   - wrong axis, broadcasting or reshape; off-by-one in windows or sequences;
+   - `model.eval()` / `torch.no_grad()` missing at evaluation; dropout or batch-norm in the wrong mode;
+   - masks inverted or misaligned; padding counted in the loss or metric;
+   - seeds not set or not propagated to data loaders;
+   - metric averaging (micro vs. macro), thresholding on the test set;
+   - the wrong config file or a hard-coded default overriding the config;
+   - exceptions caught and ignored; fallbacks that silently skip data.
+3. **Test by running.**
+   - inputs with a known answer through each new function;
+   - compare outputs with the reference implementation on the same batch;
+   - feature switched off must reproduce the previous result exactly.
+4. **Check reproducibility.** Run twice with the same seed and compare. Record commit, config, library versions and hardware.
+5. **Classify findings.** *Blocking* (changes results), *should fix*, *note*. Each finding has file:line, why it matters, and how it was confirmed.
+6. **Verdict.** State whether the results produced by this code can be used, cannot be used, or can be used after specific fixes.
 
-- Danh sách phát hiện theo mức độ.
-- Test đã chạy và kết quả thật.
-- Kết luận: kết quả thí nghiệm có dùng được không.
+## Output
 
-## Không được làm
+```markdown
+## Verification: <change>
 
-- Không coi câu "agent nói đã chạy test" là bằng chứng.
-- Không tự sửa rồi chạy lại thí nghiệm lớn khi chưa được đồng ý.
+**Verdict:** <usable / not usable / usable after fixes>. <One sentence why.>
+
+### Scope
+Files and functions changed; changes beyond the task: ….
+
+### Findings
+| Severity | Location | Problem | How confirmed | Fix |
+|---|---|---|---|---|
+
+### Tests run
+| Test | Command | Result |
+|---|---|---|
+
+### Reproducibility
+Same-seed runs: <identical / differ by …>. Environment: ….
+```
+
+## Quality checklist
+
+- [ ] The review used the diff, not the agent's description of it.
+- [ ] Every blocking finding was confirmed by running code, not only by reading.
+- [ ] The verdict is explicit.
+
+## Guardrails
+
+- **Never:** accept "the agent said tests pass" as evidence; run them.
+- **Never:** rewrite large parts of the code as part of a review.
+- **Ask first:** before fixing code or re-running large experiments.
+
+## Example
+
+**Request:** "Claude added mixup to our data loader and accuracy jumped 3 points. Can I trust it?"
+
+**Response outline:** diff shows mixup also applied in the validation loader; confirmed by printing a validation batch; blocking finding with file:line; with the fix, the gain drops to 0.4 ± 0.3; verdict "not usable until fixed".

@@ -22,7 +22,7 @@ function trackedFiles() {
 
 const files = trackedFiles();
 for (const path of disallowedFiles(files)) {
-  errors.push(`${path}: file này không được phép (DW nằm ở workers/<id>.md, playbook ở playbooks/<ten>/SKILL.md)`);
+  errors.push(`${path}: this file is not allowed (a Digital Worker lives in workers/<id>.md, a playbook in playbooks/<name>/SKILL.md)`);
 }
 for (const path of files) {
   let content;
@@ -32,10 +32,10 @@ for (const path of files) {
     continue;
   }
   if (content.includes("\0")) {
-    errors.push(`${path}: file nhị phân không được phép`);
+    errors.push(`${path}: binary files are not allowed`);
     continue;
   }
-  for (const hit of scanSecrets(content)) errors.push(`${path}:${hit.line}: trông như ${hit.label}; xoá nó và dùng kết nối ứng dụng của QACI Duo`);
+  for (const hit of scanSecrets(content)) errors.push(`${path}:${hit.line}: looks like ${hit.label}; remove it and use QACI Duo's app connections instead`);
 }
 
 const { playbooks, workers, errors: contentErrors } = loadRepository(root, files);
@@ -43,25 +43,25 @@ errors.push(...contentErrors);
 
 // The templates must stay valid so a contributor always starts from a file that passes.
 const templatePlaybook = readFileSync(join(root, "templates/playbook/SKILL.md"), "utf8");
-for (const problem of validatePlaybook(templatePlaybook, "ten-playbook")) errors.push(`templates/playbook/SKILL.md: ${problem}`);
+for (const problem of validatePlaybook(templatePlaybook, "your-playbook")) errors.push(`templates/playbook/SKILL.md: ${problem}`);
 const templateWorker = readFileSync(join(root, "templates/worker.md"), "utf8");
-const templateProblems = validateWorker(templateWorker, "ten-dw", new Set(["ten-playbook"]));
+const templateProblems = validateWorker(templateWorker, "your-worker", new Set(["your-playbook"]));
 for (const problem of templateProblems) errors.push(`templates/worker.md: ${problem}`);
 if (templateProblems.length === 0 && errors.every((error) => !error.startsWith("templates/playbook"))) {
-  const generated = workerPackage(templateWorker, new Map([["ten-playbook", readPlaybook(templatePlaybook)]]));
-  for (const problem of validatePackage(generated, "ten-dw")) errors.push(`templates/worker.md: gói sinh ra không hợp lệ: ${problem}`);
+  const generated = workerPackage(templateWorker, new Map([["your-playbook", readPlaybook(templatePlaybook)]]));
+  for (const problem of validatePackage(generated, "your-worker")) errors.push(`templates/worker.md: the generated package is invalid: ${problem}`);
 }
 
 const catalog = JSON.stringify(buildCatalog(workers.map((worker) => workerLibraryFiles(worker.markdown, playbooks).entry)));
-if (Buffer.byteLength(catalog) > MAX_CATALOG_BYTES) errors.push("catalog.json sẽ vượt 256 KB; QACI Duo không đọc được");
+if (Buffer.byteLength(catalog) > MAX_CATALOG_BYTES) errors.push("catalog.json would exceed 256 KB, which QACI Duo refuses");
 
 if (errors.length > 0) {
-  console.error(`Có ${errors.length} lỗi:`);
+  console.error(`${errors.length} problem(s):`);
   for (const error of errors) console.error(`- ${error}`);
   process.exitCode = 1;
 } else {
   const used = new Set(workers.flatMap((worker) => splitPackage(worker.markdown).metadata.playbooks));
   const loose = [...playbooks.keys()].filter((name) => !used.has(name));
-  console.log(`OK: ${workers.length} Digital Worker, ${playbooks.size} playbook hợp lệ, ${files.length} file đã quét secret.`);
-  if (loose.length) console.log(`Playbook chưa gắn DW nào (vẫn import được qua Skills library): ${loose.join(", ")}`);
+  console.log(`OK: ${workers.length} Digital Worker(s) and ${playbooks.size} playbook(s) are valid; ${files.length} files scanned for secrets.`);
+  if (loose.length) console.log(`Playbooks not carried by any Digital Worker (still importable through the Skills library): ${loose.join(", ")}`);
 }

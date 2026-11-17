@@ -1,40 +1,87 @@
 ---
 name: mentor-outreach
-title: Lọc mentor và hoàn thiện hồ sơ
-description: Lọc mentor theo CV và hướng nghiên cứu, rồi soạn và chỉnh cold email, SoP và CV cho từng người mà vẫn giữ giọng văn của ứng viên.
-triggers: cold email, viết email cho giáo sư, statement of purpose, SoP, sửa CV
+title: Shortlist mentors and polish the application
+description: Filter potential mentors against the applicant's CV and direction, then draft and polish cold emails, the statement of purpose and the CV for each target while keeping the applicant's own voice.
+triggers: cold email a professor, write to a supervisor, statement of purpose, SoP, polish my CV, application email
 tags: research, phd, application, writing
 license: MIT
 author: QACI
 ---
 
-# Lọc mentor và hoàn thiện hồ sơ
+# Shortlist mentors and polish the application
 
-## Khi nào dùng
+Helps an applicant contact the right people with short, specific, honest messages, and bring the statement and CV to the standard each target expects — without replacing the applicant's voice with template prose.
 
-Đã có danh sách giáo sư hoặc mentor và cần liên hệ, hoặc đang hoàn thiện SoP và CV.
+## When to use
 
-## Đầu vào cần có
+- A list of potential mentors exists (for example from `find-supervisors`) and outreach is next.
+- The statement of purpose or CV needs work for specific programmes.
+- **Not for:** a final outsider read of the finished package (use `application-review`).
 
-- CV, bản nháp SoP và danh sách mentor (có thể từ playbook `find-supervisors`).
-- Yêu cầu của từng trường: độ dài, câu hỏi bắt buộc, hạn nộp.
+## Inputs
 
-## Các bước
+| Input | Required | Notes |
+|---|---|---|
+| CV | yes | Current version |
+| Candidate mentors | yes | Names with links, ideally with the papers that make them a fit |
+| Statement draft | no | Needed for statement work |
+| Programme requirements | no | Length, prompts, deadlines per programme |
+| Samples of the applicant's writing | no | Emails or paragraphs, to match their voice |
 
-1. Lọc mentor: so CV và hướng nghiên cứu của ứng viên với từng người; chỉ giữ người có điểm nối cụ thể.
-2. Cold email: không quá 200 từ; tiêu đề rõ; một câu giới thiệu bản thân; 1-2 câu nối với một paper cụ thể của họ mà ứng viên đã đọc; điều muốn hỏi; đính kèm CV. Mỗi người một email riêng.
-3. SoP: dựa trên câu chuyện thật của ứng viên — động lực, kinh nghiệm nghiên cứu, kết quả, hướng sắp tới, vì sao chọn trường hoặc lab này. Kiểm tra cấu trúc và độ dài theo yêu cầu trường.
-4. CV: đưa nghiên cứu và publication lên đầu; mô tả bằng động từ và kết quả; thống nhất định dạng ngày và trích dẫn.
-5. Chỉnh mà giữ giọng: sửa ngữ pháp và độ rõ, không thay bằng văn mẫu; đánh dấu câu nghe như máy viết để ứng viên tự viết lại.
+## Procedure
 
-## Kết quả trả về
+1. **Filter mentors.** Compare the applicant's experience and direction with each mentor's recent work. Keep those with a concrete connection — a paper the applicant can discuss, a method they have used, a dataset they know. Note the connection.
+2. **Draft one email per mentor.**
+   - subject line that states the purpose (for example "Prospective PhD student — <topic>");
+   - one sentence on who the applicant is;
+   - one or two sentences linking to a specific paper of the mentor that the applicant has actually read, and why it relates to their work;
+   - the ask: openings, fit, a short call;
+   - CV attached; under 200 words; no flattery.
+   - *Check:* the email would make no sense if sent to a different person.
+3. **Statement of purpose.** Build it from the applicant's real story: motivation, research experience and what they personally did, results, the direction they want next, and why this programme or lab. Match the programme's length and prompts.
+4. **CV.** Research experience and publications first; each item starts with a verb and states a result; consistent date and citation formats; nothing padded.
+5. **Edit for voice.** Fix grammar and clarity but keep the applicant's phrasing. Flag sentences that read as machine-written so the applicant rewrites them in their own words.
+6. **Track.** Produce a table of who gets which email and what each one references.
 
-- Danh sách mentor đã lọc kèm lý do.
-- Email nháp cho từng người.
-- SoP và CV có ghi chú sửa.
+## Output
 
-## Không được làm
+```markdown
+## Outreach package
 
-- Không tự gửi email.
-- Không phóng đại thành tích hay bịa kinh nghiệm.
-- Không viết hộ toàn bộ SoP.
+### Mentor shortlist
+| Mentor | Connection (paper, method, data) | Priority |
+|---|---|---|
+
+### Emails
+**To <name> — subject: <subject>**
+<draft, under 200 words>
+
+### Statement of purpose
+<revised draft with tracked comments>
+
+### CV
+<revised sections with comments>
+
+### Sentences to rewrite in your own words
+- "<sentence>" — why it reads as generic
+```
+
+## Quality checklist
+
+- [ ] Each email references a specific paper and could only go to that person.
+- [ ] Every claim in the email, statement and CV is true and verifiable.
+- [ ] Length limits are met.
+- [ ] Machine-sounding sentences are flagged, not silently kept.
+
+## Guardrails
+
+- **Never:** send emails or submit applications; the applicant does.
+- **Never:** exaggerate achievements, invent experience or claim to have read a paper the applicant has not.
+- **Never:** write the whole statement in place of the applicant; draft from their material and leave decisions to them.
+- **Ask first:** before contacting anyone or sharing the applicant's documents outside the conversation.
+
+## Example
+
+**Request:** "Here's my CV and five professors from the shortlist. Draft emails and fix my SoP for two programmes."
+
+**Response outline:** four mentors kept (one dropped for lack of a real connection), four tailored emails of 140–180 words, SoP revised for each programme's prompt with comments, CV reordered with results-first bullets, six sentences flagged for the applicant to rewrite.

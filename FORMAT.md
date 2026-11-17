@@ -1,49 +1,61 @@
-# Định dạng
+# File format
 
-## Playbook: `playbooks/<ten-playbook>/SKILL.md`
+## Playbook — `playbooks/<name>/SKILL.md`
 
-Một file [SKILL.md](https://agentskills.io) tiêu chuẩn với vài trường thêm. QACI Duo đọc mỗi trường của frontmatter
-trên **một dòng**, nên không dùng danh sách YAML hay giá trị nhiều dòng; danh sách thì cách nhau bằng dấu phẩy. Giá
-trị có chuỗi `": "` thì đặt trong nháy kép.
+A standard [SKILL.md](https://agentskills.io) with a few extra fields. QACI Duo's Skills library reads each
+frontmatter field from **one line**, so do not use YAML lists or multi-line values: separate list items with commas,
+and put a value that contains `": "` in double quotes.
 
-| Trường | Bắt buộc | Ý nghĩa |
+| Field | Required | Meaning |
 |---|---|---|
-| `name` | có | Trùng tên thư mục; chữ thường, số, gạch ngang, tối đa 64 ký tự |
-| `title` | có | Tên hiển thị trong QACI Duo, tối đa 100 ký tự |
-| `description` | có | Một câu: playbook làm được gì, kết quả là gì. Tối đa 300 ký tự |
-| `triggers` | có | 1-30 cụm từ người dùng hay nói khi cần playbook này, cách nhau bằng dấu phẩy |
-| `tags` | không | Tối đa 8 từ chữ thường, cách nhau bằng dấu phẩy |
-| `license` | có | Ví dụ `MIT` |
-| `author` | có | Tên người hoặc nhóm viết |
-| `compatibility` | không | Ghi chú môi trường cần có |
+| `name` | yes | Equal to the folder name; lowercase letters, digits and single hyphens, at most 64 characters |
+| `title` | yes | Display name in QACI Duo, at most 100 characters |
+| `description` | yes | One sentence: what the worker achieves and hands back. At most 300 characters |
+| `triggers` | yes | 1–30 comma-separated phrases a user would say when they need this playbook |
+| `tags` | no | Up to 8 lowercase comma-separated words |
+| `license` | yes | For example `MIT` |
+| `author` | yes | Person or team that wrote it |
+| `compatibility` | no | Environment notes |
 
-Phần thân là quy trình, tối đa 24.000 ký tự. Nên có các mục: **Khi nào dùng**, **Đầu vào cần có**, **Các bước**,
-**Kết quả trả về**, **Không được làm**.
+The body is the procedure, at most 24,000 characters, with these sections:
 
-CI chặn: trường lạ, chuỗi giống base64 dài, lệnh `curl ... | sh`, ký tự Unicode vô hình và mọi chuỗi trông như secret.
+| Section | Purpose |
+|---|---|
+| `# <Title>` and a short intro | The outcome and who it is for |
+| `## When to use` | Situations that call for it, and a **Not for:** line pointing to other playbooks |
+| `## Inputs` | A table of what to ask before starting, required or not, and defaults |
+| `## Procedure` | Numbered steps, each concrete, with a *Check:* line where it matters |
+| `## Output` | The exact shape of the result, usually as a Markdown template |
+| `## Quality checklist` | Checkboxes the worker runs before handing back |
+| `## Guardrails` | **Never** and **Ask first** lists |
+| `## Example` | One realistic request and an outline of the response |
 
-## Digital Worker: `workers/<ten-dw>.md`
+CI refuses unknown fields, long base64-like strings, `curl … | sh`, invisible Unicode characters, and anything that
+looks like a secret.
 
-YAML frontmatter rồi đến phần thân Markdown.
+## Digital Worker — `workers/<id>.md`
 
-| Trường | Bắt buộc | Ý nghĩa |
+YAML frontmatter followed by a Markdown body.
+
+| Field | Required | Meaning |
 |---|---|---|
-| `id` | có | Trùng tên file |
-| `release` | có | Phiên bản dạng `1.0.0`; tăng khi thay đổi |
-| `name`, `title` | có | Tên DW và vai trò |
-| `tagline` | có | Một câu, tối đa 160 ký tự; hiện trên thẻ trong Templates |
-| `description` | có | DW làm gì và không làm gì, tối đa 2.000 ký tự. Đây là mô tả của bot trong QACI Duo |
-| `category`, `license`, `author.name` | có | |
-| `color` | có | `green`, `blue`, `red`, `orange`, `purple`, `cyan`, `pink`, `yellow`, `teal`, `coral` |
-| `outcomes` | có | 1-12 kết quả người dùng nhận được |
-| `playbooks` | có | 1-30 tên thư mục trong `playbooks/` |
-| `apps` | không | Ứng dụng cần kết nối: `slug`, `label`, `reason`, `optional`. Chỉ khai báo, không kèm thông tin đăng nhập |
-| `tags`, `featured`, `setupMinutes` | không | `featured: true` đưa DW lên đầu danh sách |
+| `id` | yes | Equal to the file name |
+| `release` | yes | Semantic version such as `1.0.0`; bump it whenever the worker or one of its playbooks changes |
+| `name`, `title` | yes | Worker name and role |
+| `tagline` | yes | One sentence, at most 160 characters; shown on the Templates card |
+| `description` | yes | What the worker does and never does, at most 2,000 characters; becomes the bot's description |
+| `category`, `license`, `author.name` | yes | |
+| `color` | yes | `green`, `blue`, `red`, `orange`, `purple`, `cyan`, `pink`, `yellow`, `teal` or `coral` |
+| `outcomes` | yes | 1–12 results the user gets |
+| `playbooks` | yes | 1–30 folder names from `playbooks/` |
+| `apps` | no | Apps the worker can use: `slug`, `label`, `reason`, `optional`. Declared only, never with credentials |
+| `tags`, `featured`, `setupMinutes` | no | `featured: true` lists the worker first |
 
-Phần thân cần ba mục: `## Mission`, `## Working rules`, `## Completion rule`.
+The body needs three sections: `## Mission`, `## Working rules` (including which playbook to use when) and
+`## Completion rule`.
 
-## Nhánh `library` (sinh tự động)
+## The `library` branch (generated)
 
-Sau mỗi lần merge, workflow sinh từ mỗi DW một gói BotMRR Markdown v1 (`packages/<dw>.md`): một agent, các playbook
-thành skill của bot, không có room hay lịch chạy. Kèm theo là `catalog.json` mà QACI Duo đọc, và bản sao của mọi
-`playbooks/<ten>/SKILL.md` để import riêng.
+After each merge the workflow builds, for every worker, a BotMRR Markdown v1 package (`packages/<id>.md`) with one
+agent whose skills are the worker's playbooks — no group chat and no routine. It also writes the `catalog.json` that
+QACI Duo reads and a copy of every `playbooks/<name>/SKILL.md` for individual import.
