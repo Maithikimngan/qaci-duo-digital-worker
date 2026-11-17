@@ -40,6 +40,8 @@ Every playbook follows the same shape — *When to use*, *Inputs*, *Procedure* w
 
 ## Contribute
 
+The repository is private: ask a code owner to add you as a collaborator to read it and open pull requests.
+
 Add a playbook, improve an existing one, or propose a new worker: start with [CONTRIBUTING.md](CONTRIBUTING.md); the
 file format is in [FORMAT.md](FORMAT.md). Have an idea but no time to write it? Open a **Playbook idea** issue.
 

@@ -11,7 +11,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const out = resolve(root, process.argv[2] ?? "dist");
 if (out === root || !out.startsWith(`${root}/`)) throw new Error("The output folder must be inside the repository");
 const repository = process.env.GITHUB_REPOSITORY ?? "vanhaito/qaci-duo-playbooks";
-const raw = (path) => `https://raw.githubusercontent.com/${repository}/library/${path}`;
+const raw = (path) => `https://github.com/${repository}/raw/library/${path}`;
 
 const paths = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], { cwd: root, encoding: "utf8" })
   .split("\0").filter(Boolean);

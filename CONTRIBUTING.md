@@ -15,7 +15,8 @@ In the research workflow, **each step is one worker and each task within a step 
 
 ## Steps
 
-1. Fork the repository and create a branch.
+1. Ask a code owner (see `.github/CODEOWNERS`) to add you as a collaborator — the repository is private — then
+   create a branch, or fork it if you prefer.
 2. Write your files following [FORMAT.md](FORMAT.md). A playbook's folder and its `name` must match; a worker's file
    name and its `id` must match.
 3. Run the checks locally (Node 20 or later):
@@ -43,7 +44,7 @@ In the research workflow, **each step is one worker and each task within a step 
 | Review | Code owner (see `.github/CODEOWNERS`) | Reads the content: is the procedure correct, safe, specific, and does it stop before actions that need approval? |
 | Merge to `main` | Code owner | Possible only with a green check and an approval |
 | Publish | `Publish library` workflow | Regenerates the `library` branch within about a minute |
-| Available in QACI Duo | Users | Visible within about five minutes (GitHub caches raw files) |
+| Available in QACI Duo | Users | Visible as soon as `library` is published (QACI Duo reads it through the GitHub API with a read-only token) |
 
 ## What reviewers look for
 
