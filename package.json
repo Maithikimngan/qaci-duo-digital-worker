@@ -1,9 +1,9 @@
 {
-  "name": "qaci-duo-teams",
+  "name": "qaci-duo-playbooks",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "QACI Duo team playbooks, contributed by pull request",
+  "description": "QACI Duo Digital Workers and playbooks, contributed by pull request",
   "scripts": {
     "test": "node scripts/validate.mjs && node --test tests/*.test.mjs",
     "build": "node scripts/build.mjs dist"

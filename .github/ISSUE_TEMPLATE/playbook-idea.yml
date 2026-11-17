@@ -1,12 +1,12 @@
 name: Đề xuất playbook
-description: Có ý tưởng cho Digital Worker nhưng không muốn tự viết file? Mô tả ở đây.
+description: Có ý tưởng cho một playbook hoặc Digital Worker nhưng không muốn tự viết file? Mô tả ở đây.
 title: "[Ý tưởng] "
 labels: ["playbook-idea"]
 body:
   - type: textarea
     id: outcome
     attributes:
-      label: Bạn muốn DW làm được việc gì?
+      label: Playbook này giúp làm được việc gì?
       description: Kết quả cuối cùng bạn cần, càng cụ thể càng tốt.
     validations:
       required: true
@@ -19,11 +19,11 @@ body:
     id: approvals
     attributes:
       label: Việc nào bắt buộc phải có người duyệt?
-      description: Ví dụ merge, deploy, gửi email cho khách hàng.
+      description: Ví dụ gửi email, nộp bài, xoá dữ liệu, chạy job tốn tài nguyên.
   - type: checkboxes
     id: safety
     attributes:
       label: An toàn
       options:
-        - label: Tôi không dán token, mật khẩu hay dữ liệu khách hàng vào issue này
+        - label: Tôi không dán token, mật khẩu hay dữ liệu cá nhân vào issue này
           required: true

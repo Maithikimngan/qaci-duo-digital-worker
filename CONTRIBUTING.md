@@ -1,42 +1,52 @@
-# Đóng góp playbook
+# Đóng góp playbook và Digital Worker
 
-Cảm ơn bạn dạy Digital Worker một việc mới. Bạn chỉ cần sửa **một file** trong `packages/`.
+## Bạn muốn làm gì?
+
+| Việc | File bạn sửa |
+|---|---|
+| Thêm một khả năng mới | Tạo `playbooks/<ten-playbook>/SKILL.md` (copy từ `templates/playbook/SKILL.md`). Muốn DW nào dùng thì thêm tên playbook vào `playbooks:` của `workers/<dw>.md`. |
+| Cải thiện playbook có sẵn | Sửa `playbooks/<ten>/SKILL.md`. |
+| Tạo Digital Worker mới | Tạo `workers/<ten-dw>.md` (copy từ `templates/worker.md`) và liệt kê các playbook nó mang. |
+
+Một playbook là **một quy trình làm được việc cụ thể**, không phải một vai trò. "Viết rebuttal" là playbook; "người
+viết paper" là DW.
 
 ## Các bước
 
-1. **Fork** repo này (hoặc tạo nhánh nếu bạn có quyền ghi).
-2. Copy [`templates/playbook.md`](templates/playbook.md) thành `packages/<ten-playbook>.md`.
-   Tên file chỉ gồm chữ thường, số và dấu `-`, ví dụ `bug-triage-desk.md`.
-3. Sửa file:
-   - `id:` trùng tên file (không có `.md`).
-   - Mỗi DW có `key`, `name`, `title`, `description` và `appearance.color`.
-   - Mỗi quy trình trong `playbooks:` có `triggers` và `instructions` cụ thể.
-   - Lịch chạy (`routines:`) luôn có `enabledAfterInstall: false`.
-   - Phần thân giữ đủ 7 mục: `## Activation`, `## Mission`, `## Outcomes`, `## Connections`, `## Team`,
-     `## Chief of Staff`, `## Completion rule`.
-4. Kiểm tra (không bắt buộc, CI sẽ chạy lại):
+1. Fork repo, tạo nhánh mới.
+2. Viết file theo [FORMAT.md](FORMAT.md). Tên thư mục playbook và `name:` phải giống nhau; tên file DW và `id:` phải
+   giống nhau.
+3. Chạy kiểm tra ở máy (Node 20 trở lên):
+
    ```sh
-   npm ci
+   npm ci --ignore-scripts
    npm test
    ```
-5. Thử trong QACI Duo: đẩy nhánh lên fork, rồi dán link GitHub của file vào ô import GitHub của QACI Duo.
-6. Mở **Pull Request** vào `main` và điền checklist.
 
-Không biết Git? Bạn có thể tạo file ngay trên GitHub: vào thư mục `packages/` → *Add file → Create new file*,
-dán nội dung từ file mẫu, rồi chọn *Propose changes*. GitHub sẽ tự tạo fork và Pull Request.
+4. Mở pull request vào `main` và điền checklist.
 
-## Điều gì xảy ra sau khi mở PR
+## Thử trước khi mở pull request
 
-| Bước | Ai | Kết quả |
+- **Một playbook:** copy toàn bộ `SKILL.md`, dán vào **Settings → Skills library → Import a skill** trong QACI Duo,
+  gán cho một DW và giao cho nó một việc thật.
+- **Cả một DW:** chạy `npm run build`, đẩy nhánh lên fork, rồi trong QACI Duo vào **+ → Templates → Import** và dán link
+  GitHub của `dist/packages/<dw>.md`. Hoặc dán link sau khi đã đẩy file đó lên một nhánh của fork.
+
+## Quy trình review
+
+| Bước | Ai | Điều gì xảy ra |
 |---|---|---|
-| CI `Validate playbooks` | Máy, vài giây | Kiểm tra định dạng, 7 mục bắt buộc, lịch chạy tắt sẵn, quét secret, chỉ cho phép file trong layout đã biết |
-| Review | Người phụ trách trong `.github/CODEOWNERS` | Duyệt nội dung: vai trò rõ, quy trình đúng, không vượt quyền người dùng |
-| Merge vào `main` | Người phụ trách | Workflow `Publish library` cập nhật nhánh `library` trong khoảng một phút |
-| Dùng | Chủ của DW | QACI Duo thấy team trong Thư viện; cài ở trạng thái tắt, chủ tự bật |
+| Mở pull request | Người đóng góp | CI `validate` chạy: định dạng, layout repo, quét secret, gói DW sinh ra phải hợp lệ |
+| Review | Code owner (`.github/CODEOWNERS`) | Đọc nội dung: quy trình có đúng, có an toàn, có giới hạn việc cần người duyệt không |
+| Merge vào `main` | Code owner | Chỉ merge được khi CI xanh và có approve |
+| Publish | Workflow `Publish library` | Sinh lại nhánh `library` trong khoảng một phút |
+| Có trên QACI Duo | Người dùng | Thấy thay đổi sau tối đa ~5 phút (GitHub cache file raw) |
 
-## Quy tắc review
+## Viết playbook tốt
 
-- Một PR một team. Sửa team có sẵn thì tăng `release` (ví dụ `1.0.0` → `1.1.0`).
-- Không tự duyệt PR của chính mình.
-- Từ chối khi playbook: xin token hay mật khẩu trong chat, tự merge/deploy/gửi ra ngoài không qua người duyệt,
-  chứa dữ liệu khách hàng hay thông tin nội bộ nhạy cảm, hoặc thêm script/file nhị phân.
+- Mỗi bước đủ cụ thể để người khác làm lại được và có cách kiểm tra.
+- Nói rõ đầu vào phải hỏi trước, và kết quả trả về ở dạng nào.
+- Có mục **Không được làm**: việc nào DW không tự làm khi chưa có người duyệt (gửi email, nộp bài, xoá dữ liệu,
+  chạy job tốn tài nguyên).
+- Yêu cầu dẫn nguồn và tách điều đã kiểm khỏi suy đoán; không để DW bịa paper hay số liệu.
+- Không đưa tên người, tên dự án nội bộ hay dữ liệu thật vào ví dụ.

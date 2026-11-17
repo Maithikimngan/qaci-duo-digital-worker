@@ -1,7 +1,8 @@
-// Shared rules for QACI Duo playbooks: parse, validate, scan for secrets and build the published library.
-// The package checks follow QACI Duo's own BotMRR Markdown v1 parser (shared/package-format.ts) and the
-// validator of github.com/milind-soni/openmausbot-teams (MIT), so a file that passes here installs in the app.
-import { parse as parseYaml } from "yaml";
+// Shared rules for QACI Duo Digital Workers and playbooks: parse, validate, scan for secrets and build the library.
+// A playbook is one SKILL.md (one capability); a Digital Worker (workers/<id>.md) is one bot that carries playbooks.
+// The checks follow QACI Duo's own parsers (shared/skill-md.ts, shared/package-format.ts) and the validator of
+// github.com/milind-soni/openmausbot-teams (MIT), so a file that passes here imports in the app.
+import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 export const REQUIRED_SECTIONS = ["Activation", "Mission", "Outcomes", "Connections", "Team", "Chief of Staff", "Completion rule"];
 export const COLORS = new Set(["green", "blue", "red", "orange", "purple", "cyan", "pink", "yellow", "teal", "coral"]);
@@ -187,119 +188,294 @@ export function scanSecrets(content) {
   return hits;
 }
 
-const ALLOWED_FILES = [
-  /^packages\/[a-z0-9][a-z0-9-]*\.md$/,
-  /^templates\/[a-z0-9-]+\.md$/,
-  /^scripts\/[a-z0-9-]+\.mjs$/,
-  /^tests\/[a-z0-9.-]+\.mjs$/,
-  /^\.github\/(?:CODEOWNERS|PULL_REQUEST_TEMPLATE\.md|workflows\/[a-z0-9-]+\.yml|ISSUE_TEMPLATE\/[a-z0-9-]+\.yml)$/,
-  /^(?:README|CONTRIBUTING|FORMAT|SECURITY)\.md$/,
-  /^(?:LICENSE|package\.json|package-lock\.json|\.gitignore)$/,
-];
 
-/** Files a pull request may not add: anything outside the known layout (binaries, scripts in packages/, …). */
-export function disallowedFiles(paths) {
-  return paths.filter((path) => !ALLOWED_FILES.some((pattern) => pattern.test(path)));
+// ---------------------------------------------------------------------------------------------------------------
+// Playbooks: playbooks/<name>/SKILL.md, one capability each.
+
+export const PLAYBOOK_MAX_BYTES = 256 * 1024; // QACI Duo's SKILL.md limit
+export const PLAYBOOK_BODY_MAX = 24_000; // a package playbook's instructions limit
+const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const TAG = /^[a-z0-9][a-z0-9-]{0,23}$/;
+const PLAYBOOK_FIELDS = new Set(["name", "title", "description", "triggers", "tags", "license", "author", "compatibility"]);
+export const commaList = (value) => String(value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+
+/** The `key: value` lines of a SKILL.md frontmatter, read as QACI Duo's Skills library reads them (one line each). */
+export function readSkillFrontmatter(raw) {
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if (!match) return null;
+  const fields = {};
+  const stray = [];
+  for (const line of match[1].split(/\r?\n/)) {
+    if (!line.trim() || line.trimStart().startsWith("#")) continue;
+    const kv = line.match(/^([A-Za-z][\w-]*):\s*(.*)$/);
+    if (!kv) stray.push(line);
+    else fields[kv[1].toLowerCase()] = kv[2].trim();
+  }
+  return { fields, stray, yaml: match[1], body: match[2] ?? "" };
 }
 
-const yamlString = (value) => JSON.stringify(String(value).replace(/\s+/g, " ").trim());
+/** Every reason a playbook would not import into QACI Duo (as a bot skill or into the Skills library). */
+export function validatePlaybook(raw, folder) {
+  const errors = [];
+  const fail = (message) => errors.push(message);
+  if (Buffer.byteLength(raw) > PLAYBOOK_MAX_BYTES) return ["SKILL.md lớn hơn 256 KB"];
+  if (!SKILL_NAME.test(folder) || folder.length > 64) fail(`tên thư mục "${folder}" phải là chữ thường, số và dấu gạch ngang (tối đa 64 ký tự)`);
+  const front = readSkillFrontmatter(raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw);
+  if (!front) return [...errors, "thiếu phần frontmatter giữa hai dòng --- ở đầu SKILL.md"];
+  if (front.stray.length) fail("mỗi trường trong frontmatter phải nằm trên một dòng `khoa: gia tri` (QACI Duo không đọc danh sách hay giá trị nhiều dòng)");
+  let parsed;
+  try {
+    parsed = parseYaml(front.yaml) ?? {};
+  } catch (error) {
+    return [...errors, `frontmatter không đọc được như YAML: ${error.message.split("\n")[0]}; đặt giá trị có dấu ": " trong dấu nháy kép`];
+  }
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!PLAYBOOK_FIELDS.has(key)) fail(`trường \`${key}\` không được hỗ trợ; chỉ dùng: ${[...PLAYBOOK_FIELDS].join(", ")}`);
+    else if (typeof value !== "string") fail(`\`${key}\` phải là một dòng chữ (danh sách thì cách nhau bằng dấu phẩy)`);
+  }
+  const field = (key) => (typeof parsed[key] === "string" ? parsed[key].trim() : "");
+  if (field("name") !== folder) fail(`name phải trùng tên thư mục: \`name: ${folder}\``);
+  if (!text(field("title"), 100)) fail("title là bắt buộc (tên hiển thị, tối đa 100 ký tự)");
+  if (!text(field("description"), 300)) fail("description là bắt buộc (một câu, tối đa 300 ký tự)");
+  const triggers = commaList(field("triggers"));
+  if (triggers.length === 0 || triggers.length > 30 || triggers.some((trigger) => trigger.length > 100)) {
+    fail("triggers cần 1-30 cụm từ cách nhau bằng dấu phẩy, mỗi cụm tối đa 100 ký tự");
+  }
+  const tags = commaList(field("tags"));
+  if (tags.length > 8 || tags.some((tag) => !TAG.test(tag))) fail("tags tối đa 8 từ chữ thường, cách nhau bằng dấu phẩy");
+  if (!text(field("license"), 200)) fail("license là bắt buộc");
+  if (!text(field("author"), 100)) fail("author là bắt buộc");
+  const body = front.body.trim();
+  if (body.length < 100) fail("phần thân cần mô tả quy trình (ít nhất 100 ký tự)");
+  if (body.length > PLAYBOOK_BODY_MAX) fail(`phần thân tối đa ${PLAYBOOK_BODY_MAX} ký tự`);
+  // QACI Duo shows these to the reviewer as warnings; here they block the merge.
+  if (/[A-Za-z0-9+/]{120,}={0,2}/.test(raw)) fail("có chuỗi giống base64 dài, cách thường dùng để giấu chỉ dẫn");
+  if (/\b(curl|wget)\b[^\n]{0,200}\|\s*(ba|z|da)?sh\b/.test(raw)) fail("tải file rồi chạy thẳng bằng shell (curl | sh)");
+  if (/[​-‏‪-‮⁠-⁤﻿]/.test(raw.slice(1))) fail("có ký tự Unicode vô hình (zero-width hoặc bidi)");
+  return errors;
+}
+
+/** A valid playbook's fields, as the generated package and the catalog use them. */
+export function readPlaybook(raw) {
+  const front = readSkillFrontmatter(raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw);
+  const meta = parseYaml(front.yaml);
+  return {
+    name: meta.name.trim(),
+    title: meta.title.trim(),
+    description: meta.description.trim(),
+    triggers: commaList(meta.triggers),
+    body: front.body.trim(),
+    raw,
+  };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Digital Workers: workers/<id>.md, one bot each, carrying playbooks.
+
+export const WORKER_SECTIONS = ["Mission", "Working rules", "Completion rule"];
+const WORKER_FIELDS = new Set([
+  "id", "release", "name", "title", "tagline", "description", "category", "author", "license", "tags", "color",
+  "featured", "outcomes", "setupMinutes", "apps", "playbooks",
+]);
+
+/** The text under one `## heading` of a Markdown body. */
+export function section(body, heading) {
+  const lines = body.split(/\r?\n/);
+  const start = lines.findIndex((line) => new RegExp(`^##\\s+${heading.replace(/ /g, "\\s+")}\\s*$`).test(line));
+  if (start < 0) return "";
+  const end = lines.findIndex((line, index) => index > start && /^##?\s/.test(line));
+  return lines.slice(start + 1, end < 0 ? undefined : end).join("\n").trim();
+}
+
+/** Every reason a Digital Worker file would not install; `playbookNames` are the playbooks in the repository. */
+export function validateWorker(markdown, slug, playbookNames) {
+  const errors = [];
+  const fail = (message) => errors.push(message);
+  if (!SLUG.test(slug)) fail(`tên file "${slug}.md" phải là chữ thường, số và dấu gạch ngang`);
+  let worker;
+  let body;
+  try {
+    ({ metadata: worker, body } = splitPackage(markdown));
+  } catch (error) {
+    return [...errors, error.message];
+  }
+  for (const key of Object.keys(worker)) if (!WORKER_FIELDS.has(key)) fail(`trường \`${key}\` không được hỗ trợ`);
+  for (const at of credentialFields(worker, "", [])) fail(`trường \`${at}\` trông như thông tin đăng nhập; DW không được mang token hay mật khẩu`);
+  for (const heading of WORKER_SECTIONS) if (!section(body, heading)) fail(`thiếu mục \`## ${heading}\` (có nội dung) trong phần thân`);
+
+  if (worker.id !== slug) fail(`id phải trùng tên file: \`id: ${slug}\``);
+  if (!/^\d+\.\d+\.\d+$/.test(String(worker.release ?? ""))) fail("release phải theo dạng 1.0.0");
+  if (!text(worker.name, 100)) fail("name là bắt buộc (tối đa 100 ký tự)");
+  if (!text(worker.title, 200)) fail("title là bắt buộc (vai trò, tối đa 200 ký tự)");
+  if (!text(worker.tagline, 160)) fail("tagline là bắt buộc (tối đa 160 ký tự)");
+  if (!text(worker.description, 2000)) fail("description là bắt buộc (DW làm gì và không làm gì, tối đa 2000 ký tự)");
+  if (!text(worker.category, 80)) fail("category là bắt buộc");
+  if (!text(worker.author?.name, 100)) fail("author.name là bắt buộc");
+  if (!text(worker.license, 80)) fail("license là bắt buộc");
+  if (worker.tags !== undefined && (!list(worker.tags, 30) || worker.tags.some((tag) => !text(tag, 80)))) fail("tags tối đa 30 từ");
+  if (!COLORS.has(worker.color)) fail(`color phải là một trong: ${[...COLORS].join(", ")}`);
+  if (worker.featured !== undefined && typeof worker.featured !== "boolean") fail("featured là true hoặc false");
+  if (!list(worker.outcomes, 12) || worker.outcomes.length === 0 || worker.outcomes.some((value) => !text(value, 240))) {
+    fail("outcomes cần 1-12 dòng, mỗi dòng tối đa 240 ký tự");
+  }
+  if (worker.setupMinutes !== undefined && (!Number.isInteger(worker.setupMinutes) || worker.setupMinutes < 1 || worker.setupMinutes > 240)) {
+    fail("setupMinutes phải là số phút từ 1 đến 240");
+  }
+  if (worker.apps !== undefined && !list(worker.apps, 30)) fail("apps tối đa 30 ứng dụng");
+  for (const [index, app] of (Array.isArray(worker.apps) ? worker.apps : []).entries()) {
+    if (!text(app?.slug, 64) || !KEY.test(app.slug) || !text(app?.label, 100) || !text(app?.reason, 240)) fail(`apps[${index}] cần slug, label và reason`);
+  }
+  if (!list(worker.playbooks, 30) || worker.playbooks.length === 0) fail("playbooks cần 1-30 playbook");
+  else {
+    const seen = new Set();
+    for (const name of worker.playbooks) {
+      if (seen.has(name)) fail(`playbook "${name}" bị lặp`);
+      seen.add(name);
+      if (!playbookNames.has(name)) fail(`playbook "${name}" không có trong playbooks/${name}/SKILL.md`);
+    }
+  }
+  return errors;
+}
+
+const yamlBlock = (value) => stringifyYaml(value, { lineWidth: 0 }).trimEnd();
+
+/** The BotMRR Markdown v1 file QACI Duo installs: one bot whose skills are the worker's playbooks. */
+export function workerPackage(markdown, playbooksByName) {
+  const { metadata: worker, body } = splitPackage(markdown);
+  const playbooks = worker.playbooks.map((name) => playbooksByName.get(name));
+  const apps = worker.apps ?? [];
+  const pkg = {
+    botmrr: 1,
+    id: worker.id,
+    release: String(worker.release),
+    name: worker.name,
+    tagline: worker.tagline,
+    summary: worker.description,
+    category: worker.category,
+    author: worker.author,
+    license: worker.license,
+    ...(worker.featured === true ? { featured: true } : {}),
+    ...(worker.tags ? { tags: worker.tags } : {}),
+    outcomes: worker.outcomes,
+    setupMinutes: worker.setupMinutes ?? 5,
+    requirements: { apps, capabilities: [], platforms: ["any"] },
+    agents: [{
+      key: worker.id,
+      name: worker.name,
+      title: worker.title,
+      description: worker.description,
+      appearance: { color: worker.color },
+      playbooks: playbooks.map((playbook) => playbook.name),
+    }],
+    chiefOfStaff: worker.id,
+    playbooks: playbooks.map((playbook) => ({
+      key: playbook.name,
+      name: playbook.title,
+      summary: playbook.description,
+      triggers: playbook.triggers,
+      instructions: playbook.body,
+    })),
+  };
+  return [
+    "---",
+    yamlBlock(pkg),
+    "---",
+    "",
+    `# ${worker.name}`,
+    "",
+    worker.tagline,
+    "",
+    `> Digital Worker của QACI Duo, sinh tự động từ \`workers/${worker.id}.md\` và \`playbooks/*/SKILL.md\`. Đừng sửa file này; mở pull request vào \`main\`.`,
+    "",
+    "## Activation",
+    "",
+    section(body, "Working rules"),
+    "",
+    "## Mission",
+    "",
+    section(body, "Mission"),
+    "",
+    "## Outcomes",
+    "",
+    ...worker.outcomes.map((outcome) => `- ${outcome}`),
+    "",
+    "## Connections",
+    "",
+    ...(apps.length ? apps.map((app) => `- **${app.label}**${app.optional ? " (tùy chọn)" : ""}: ${app.reason}`) : ["Không cần kết nối ứng dụng."]),
+    "",
+    "## Team",
+    "",
+    `- **${worker.name} — ${worker.title}.** ${worker.description}`,
+    "",
+    "## Chief of Staff",
+    "",
+    `\`${worker.id}\` (${worker.name}) là DW duy nhất: nhận việc, chọn playbook phù hợp và trả lời người dùng.`,
+    "",
+    "## Playbooks",
+    "",
+    ...playbooks.map((playbook) => `- **${playbook.title}** (\`${playbook.name}\`): ${playbook.description}`),
+    "",
+    "## Completion rule",
+    "",
+    section(body, "Completion rule"),
+    "",
+  ].join("\n");
+}
+
 const oneLine = (value, max) => {
   const line = String(value ?? "").replace(/\s+/g, " ").trim();
   return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line;
 };
 
-/** The legacy team file, README and one SKILL.md per playbook that the team-library catalog expects. */
-export function libraryFiles(slug, markdown) {
-  const { metadata: pkg } = splitPackage(markdown);
-  const chief = pkg.chiefOfStaff ?? pkg.agents[0].key;
-  const room = pkg.rooms?.[0];
+/** Everything the team-library catalog expects for one worker: package, legacy team file, README, skills. */
+export function workerLibraryFiles(markdown, playbooksByName) {
+  const { metadata: worker } = splitPackage(markdown);
+  const id = worker.id;
+  const playbooks = worker.playbooks.map((name) => playbooksByName.get(name));
   const manifest = {
     format: "openmaus.team",
     version: 1,
     team: {
-      name: pkg.name,
-      description: oneLine(pkg.tagline, 500),
-      members: pkg.agents.map((agent) => ({
-        key: agent.key,
-        name: agent.name,
-        title: agent.title ?? "",
-        description: agent.description ?? "",
-        appearance: { color: agent.appearance.color, ...(agent.appearance.mascotExpression ? { mascotExpression: agent.appearance.mascotExpression } : {}) },
-      })),
-      room: {
-        name: room?.name ?? pkg.name,
-        bulletin: room?.bulletin ?? "",
-        defaultResponder: { kind: "member", member: chief },
-      },
+      name: worker.name,
+      description: oneLine(worker.tagline, 500),
+      members: [{ key: id, name: worker.name, title: worker.title, description: worker.description, appearance: { color: worker.color } }],
+      room: { name: worker.name, bulletin: "", defaultResponder: { kind: "member", member: id } },
     },
   };
-  const skills = pkg.playbooks.map((playbook) => ({
-    path: `teams/${slug}/skills/${playbook.key}/SKILL.md`,
-    content: [
-      "---",
-      `name: ${playbook.key}`,
-      `description: ${yamlString(playbook.summary)}`,
-      "---",
-      "",
-      `# ${playbook.name}`,
-      "",
-      "## Use this when",
-      "",
-      ...playbook.triggers.map((trigger) => `- ${trigger}`),
-      "",
-      "## Process",
-      "",
-      playbook.instructions.trim(),
-      "",
-    ].join("\n"),
-  }));
-  const owner = (key) => pkg.agents.find((agent) => agent.key === key)?.name ?? key;
+  const skills = playbooks.map((playbook) => ({ path: `teams/${id}/skills/${playbook.name}/SKILL.md`, content: playbook.raw }));
   const readme = [
-    `# ${pkg.name}`,
+    `# ${worker.name}`,
     "",
-    pkg.tagline,
+    `**${worker.title}.** ${worker.tagline}`,
     "",
-    pkg.summary,
-    "",
-    "## DW trong team",
-    "",
-    ...pkg.agents.map((agent) => `- **${agent.name}**${agent.title ? ` — ${agent.title}` : ""}${agent.key === chief ? " (Chief of Staff)" : ""}`),
+    worker.description,
     "",
     "## Playbook",
     "",
-    ...pkg.playbooks.map((playbook) => `- **${playbook.name}:** ${playbook.summary}`),
+    ...playbooks.map((playbook) => `- **${playbook.title}** — ${playbook.description} ([SKILL.md](../../playbooks/${playbook.name}/SKILL.md))`),
     "",
-    ...(pkg.routines?.length
-      ? ["## Lịch chạy gợi ý", "", ...pkg.routines.map((routine) => `- **${routine.name}** (${owner(routine.agent)}): tắt khi cài, chủ của DW tự bật.`), ""]
-      : []),
-    "## Kết nối",
-    "",
-    ...((pkg.requirements?.apps ?? []).length
-      ? pkg.requirements.apps.map((app) => `- **${app.label}**${app.optional ? " (tùy chọn)" : ""}: ${app.reason}`)
-      : ["Không cần kết nối ứng dụng."]),
-    "",
-    `Nguồn: [packages/${slug}.md](../../packages/${slug}.md)`,
+    `Nguồn: \`workers/${id}.md\` trên nhánh \`main\`.`,
     "",
   ].join("\n");
   const entry = {
-    slug,
-    name: pkg.name,
-    summary: oneLine(pkg.tagline, 300),
-    category: pkg.category,
-    outcome: oneLine(pkg.outcomes[0], 300),
-    setupMinutes: pkg.setupMinutes,
-    ...(pkg.featured === true ? { featured: true } : {}),
-    package: `packages/${slug}.md`,
-    manifest: `teams/${slug}/team.mausteam.json`,
-    readme: `teams/${slug}/README.md`,
-    members: pkg.agents.length,
+    slug: id,
+    name: worker.name,
+    summary: oneLine(worker.tagline, 300),
+    category: worker.category,
+    outcome: oneLine(worker.outcomes[0], 300),
+    setupMinutes: worker.setupMinutes ?? 5,
+    ...(worker.featured === true ? { featured: true } : {}),
+    package: `packages/${id}.md`,
+    manifest: `teams/${id}/team.mausteam.json`,
+    readme: `teams/${id}/README.md`,
+    members: 1,
     skills: skills.map((skill) => skill.path),
-    requires: { apps: (pkg.requirements?.apps ?? []).map((app) => app.label) },
+    requires: { apps: (worker.apps ?? []).map((app) => app.label) },
   };
   return {
     entry,
     files: [
-      { path: `packages/${slug}.md`, content: markdown },
+      { path: entry.package, content: workerPackage(markdown, playbooksByName) },
       { path: entry.manifest, content: `${JSON.stringify(manifest, null, 2)}\n` },
       { path: entry.readme, content: readme },
       ...skills,
@@ -307,8 +483,24 @@ export function libraryFiles(slug, markdown) {
   };
 }
 
-/** The catalog QACI Duo reads, teams ordered featured first, then by name. */
+/** The catalog QACI Duo reads, workers ordered featured first, then by name. */
 export function buildCatalog(entries) {
   const teams = [...entries].sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || a.name.localeCompare(b.name));
   return { format: "openmaus.catalog", version: 1, teams };
+}
+
+const ALLOWED_FILES = [
+  /^workers\/[a-z0-9][a-z0-9-]*\.md$/,
+  /^playbooks\/[a-z0-9]+(?:-[a-z0-9]+)*\/SKILL\.md$/,
+  /^templates\/(?:worker\.md|playbook\/SKILL\.md)$/,
+  /^scripts\/[a-z0-9-]+\.mjs$/,
+  /^tests\/[a-z0-9.-]+\.mjs$/,
+  /^\.github\/(?:CODEOWNERS|PULL_REQUEST_TEMPLATE\.md|workflows\/[a-z0-9-]+\.yml|ISSUE_TEMPLATE\/[a-z0-9-]+\.yml)$/,
+  /^(?:README|CONTRIBUTING|FORMAT|SECURITY)\.md$/,
+  /^(?:LICENSE|package\.json|package-lock\.json|\.gitignore)$/,
+];
+
+/** Files a pull request may not add: anything outside the known layout (binaries, scripts beside a playbook, …). */
+export function disallowedFiles(paths) {
+  return paths.filter((path) => !ALLOWED_FILES.some((pattern) => pattern.test(path)));
 }

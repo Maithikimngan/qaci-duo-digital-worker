@@ -1,21 +1,21 @@
-## Playbook
+## Thay đổi
 
-<!-- Tên team DW và kết quả nó giúp người dùng đạt được. -->
+<!-- Playbook hoặc DW nào, giúp người dùng làm được việc gì. -->
 
 ## Kiểm tra
 
-- [ ] Chỉ thêm hoặc sửa file trong `packages/` (một file `.md` cho mỗi team)
-- [ ] `id` trong file trùng tên file
+- [ ] Chỉ sửa `playbooks/<ten>/SKILL.md` và/hoặc `workers/<dw>.md`
+- [ ] `name` trùng tên thư mục, `id` trùng tên file
+- [ ] Tăng `release` của DW nếu thay đổi playbook nó mang
 - [ ] `npm test` chạy xanh (hoặc CI của PR này xanh)
-- [ ] Đã thử import file này trong QACI Duo (Thêm team → dán link GitHub của file)
+- [ ] Đã thử trong QACI Duo (Skills library hoặc Templates → Import)
 
 ## An toàn
 
-- [ ] Không có token, mật khẩu, dữ liệu khách hàng, file nhị phân hay script
-- [ ] Mọi lịch chạy có `enabledAfterInstall: false`
-- [ ] Merge, deploy, gửi ra ngoài vẫn chờ người dùng duyệt
-- [ ] Kết nối ứng dụng chỉ được khai báo, không kèm thông tin đăng nhập
+- [ ] Không có token, mật khẩu, dữ liệu cá nhân, file nhị phân hay script
+- [ ] Mục **Không được làm** nêu rõ việc cần người duyệt (gửi, nộp, xoá, chạy job lớn)
+- [ ] DW được yêu cầu dẫn nguồn, không bịa paper hay số liệu
 
 ## Đã thử với việc gì
 
-<!-- Một yêu cầu thực tế bạn đã giao cho team này và kết quả. -->
+<!-- Một yêu cầu thực tế bạn đã giao và kết quả. -->

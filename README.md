@@ -1,45 +1,42 @@
-# QACI Duo Teams
+# QACI Duo playbooks
 
-Thư viện playbook cho Digital Worker (DW) của **QACI Duo**. Mỗi playbook là **một file Markdown** trong
-[`packages/`](packages/) mô tả một team DW: vai trò, quy trình, lịch chạy gợi ý và việc nào phải chờ người duyệt.
+Thư viện **Digital Worker (DW)** và **playbook** cho QACI Duo, do cộng
+đồng đóng góp bằng pull request.
 
-Ai cũng đóng góp được bằng một Pull Request. Sau khi PR được duyệt và merge, playbook xuất hiện trong QACI Duo.
+- **Digital Worker** là một bot trong QACI Duo, có vai trò và quy tắc làm việc riêng.
+- **Playbook** là một khả năng của DW: một quy trình cụ thể, viết trong một file `SKILL.md`.
+  Một DW mang nhiều playbook; một playbook có thể gắn vào DW nào cũng được.
 
 ```
-Viết packages/<ten>.md ──► Mở Pull Request ──► CI kiểm tra + người phụ trách duyệt ──► Merge vào main
-                                                                                         │
-                         QACI Duo: Thêm team → Thư viện  ◄── nhánh `library` (tự sinh) ◄─┘
+playbooks/<ten>/SKILL.md ─┐
+workers/<dw>.md ──────────┴─► pull request ─► CI validate + review ─► merge main ─► publish ─► nhánh library ─► QACI Duo
 ```
 
-## Dùng một playbook trong QACI Duo
+## Đang có
 
-- **Từ thư viện:** QACI Duo đọc `catalog.json` ở nhánh [`library`](../../tree/library). Mở *Thêm team → Thư viện*,
-  chọn team, xem trước rồi thêm.
-- **Từ link:** dán link GitHub của file, ví dụ
-  `https://github.com/vanhaito/qaci-duo-teams/blob/main/packages/release-readiness-desk.md`, vào ô import GitHub.
+| Digital Worker | Playbook |
+|---|---|
+| **Literature Scout** — khảo sát tài liệu và kiểm chứng ý tưởng | `survey-a-field`, `learn-domain-knowledge`, `validate-idea` |
+| **Experiment Engineer** — hiện thực ý tưởng, chạy thí nghiệm và kiểm chứng | `idea-to-prototype`, `run-experiments`, `verify-agent-code` |
+| **Paper Writer** — hình, viết bài và phản biện | `generate-figures`, `paper-writing-pipeline` |
+| **PhD Application Advisor** — tìm giáo sư hướng dẫn và hoàn thiện hồ sơ | `find-supervisors`, `mentor-outreach`, `application-review` |
 
-Khi cài, mọi lịch chạy ở trạng thái tắt; chủ của DW xem rồi tự bật. Playbook không mang token hay quyền truy cập:
-kết nối ứng dụng (GitHub, Azure DevOps...) luôn đi qua luồng kết nối của QACI Duo.
+## Dùng trong QACI Duo
+
+- **Cài cả một DW:** **+ → Templates → Community templates** → chọn DW → **Load** → **Add**. QACI Duo tạo một bot
+  với đủ playbook của DW đó.
+- **Thêm một playbook vào DW đang có:** mở file `SKILL.md` của playbook trên nhánh
+  [`library`](https://github.com/vanhaito/qaci-duo-playbooks/tree/library) (bấm **Raw**), copy toàn bộ, dán vào
+  **Settings → Skills library → Import a skill**, rồi gán cho DW muốn dùng.
+- **Thử một DW trước khi merge:** **+ → Templates → Import**, dán link GitHub của file gói DW
+  (xem [CONTRIBUTING.md](CONTRIBUTING.md#thử-trước-khi-mở-pull-request)).
 
 ## Đóng góp
 
-Đọc [CONTRIBUTING.md](CONTRIBUTING.md). Tóm tắt:
+Thêm playbook mới, cải thiện playbook có sẵn hay đề xuất DW mới: đọc [CONTRIBUTING.md](CONTRIBUTING.md). Định dạng
+file ở [FORMAT.md](FORMAT.md). Chưa muốn tự viết? Mở issue **Đề xuất playbook**.
 
-1. Copy [`templates/playbook.md`](templates/playbook.md) thành `packages/<ten-playbook>.md`.
-2. Sửa nội dung; `id` phải trùng tên file. Định dạng chi tiết ở [FORMAT.md](FORMAT.md).
-3. Mở Pull Request. CI chạy `npm test`; người phụ trách duyệt; merge.
+Nhánh `main` là nguồn; nhánh `library` do workflow sinh ra, đừng sửa tay. QACI Duo chỉ đọc nhánh `library`, nên
+playbook chỉ tới người dùng sau khi được review và merge.
 
-Chưa muốn tự viết file? Mở issue [Đề xuất playbook](../../issues/new?template=playbook-idea.yml).
-
-## Repo này có gì
-
-| Đường dẫn | Nội dung |
-|---|---|
-| `packages/*.md` | Playbook, mỗi team một file. Nơi duy nhất contributor cần sửa. |
-| `templates/playbook.md` | File mẫu để copy. |
-| `scripts/` | Bộ kiểm tra (`npm test`) và bộ sinh thư viện (`npm run build`). |
-| `.github/workflows/validate.yml` | Chạy kiểm tra trên mọi PR. |
-| `.github/workflows/publish.yml` | Sau khi merge vào `main`, sinh `catalog.json` và các file team rồi đẩy sang nhánh `library`. |
-
-Định dạng file tương thích BotMRR Markdown v1 của
-[openmausbot-teams](https://github.com/milind-soni/openmausbot-teams), nên Claude hay ChatGPT đọc phần thân và làm theo được.
+MIT License. Phần kiểm tra định dạng dựa trên [openmausbot-teams](https://github.com/milind-soni/openmausbot-teams).
