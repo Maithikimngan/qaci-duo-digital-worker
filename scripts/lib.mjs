@@ -1,13 +1,19 @@
 // Shared rules for QACI Duo Digital Workers and playbooks: parse, validate, scan for secrets and build the library.
 // A playbook is one SKILL.md (one capability); a Digital Worker (workers/<id>.md) is one bot that carries playbooks.
-// The checks follow QACI Duo's own parsers (shared/skill-md.ts, shared/package-format.ts) and the validator of
-// github.com/milind-soni/openmausbot-teams (MIT), so a file that passes here imports in the app.
+// The checks follow QACI Duo's own parsers (shared/skill-md.ts, shared/package-format.ts). The validation approach —
+// and the "qaci-duo.package" / "qaci-duo.team" / "qaci-duo.catalog" package format this file reads and writes — is
+// adapted from the openmausbot-teams project (https://github.com/milind-soni/openmausbot-teams, MIT), whose own
+// discriminator strings ("botmrr", "openmaus.team", "openmaus.catalog") were renamed here; see PORTING_NOTES.md.
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 export const REQUIRED_SECTIONS = ["Activation", "Mission", "Outcomes", "Connections", "Team", "Chief of Staff", "Completion rule"];
 export const COLORS = new Set(["green", "blue", "red", "orange", "purple", "cyan", "pink", "yellow", "teal", "coral"]);
 export const MAX_PACKAGE_BYTES = 1_000_000; // QACI Duo refuses larger playbook files
 export const MAX_CATALOG_BYTES = 256_000;
+export const PACKAGE_FORMAT = "qaci-duo.package"; // was "botmrr" (bare `botmrr: 1` key) in openmausbot-teams
+export const TEAM_FORMAT = "qaci-duo.team"; // was "openmaus.team"
+export const CATALOG_FORMAT = "qaci-duo.catalog"; // was "openmaus.catalog"
+export const ROUTINE_RUNTIMES = new Set(["duo", "cloud"]); // was ["maus", "cloud"]
 const KEY = /^[a-z0-9][a-z0-9_-]*$/;
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 const CREDENTIAL_FIELD = /^(token|access[_-]?token|password|passwd|secret|client[_-]?secret|api[_-]?key|credentials?|private[_-]?key)$/i;
@@ -54,7 +60,7 @@ export function validatePackage(markdown, slug) {
   } catch (error) {
     return [...errors, error.message];
   }
-  if (pkg.botmrr !== 1) fail("`botmrr: 1` is missing (BotMRR Markdown v1)");
+  if (pkg.format !== PACKAGE_FORMAT || pkg.version !== 1) fail(`\`format: ${PACKAGE_FORMAT}\` and \`version: 1\` are required (QACI Duo package v1)`);
   for (const heading of REQUIRED_SECTIONS) {
     if (!new RegExp(`^## ${heading.replace(/ /g, "\\s+")}\\s*$`, "m").test(body)) fail(`the body is missing the \`## ${heading}\` section`);
   }
@@ -143,7 +149,7 @@ export function validatePackage(markdown, slug) {
     else routineKeys.add(routine.key);
     if (!text(routine?.name, 80) || !text(routine?.prompt, 20_000) || !agentKeys.has(routine?.agent)) fail(`${at} needs name, prompt and an existing agent`);
     if (routine?.enabledAfterInstall !== false) fail(`${at}: a routine must install switched off (\`enabledAfterInstall: false\`); its owner turns it on`);
-    if (!["maus", "cloud"].includes(routine?.runOn)) fail(`${at}.runOn must be maus or cloud`);
+    if (!ROUTINE_RUNTIMES.has(routine?.runOn)) fail(`${at}.runOn must be ${[...ROUTINE_RUNTIMES].join(" or ")}`);
     if (!Number.isInteger(routine?.durationMinutes) || routine.durationMinutes < 5 || routine.durationMinutes > 240) {
       fail(`${at}.durationMinutes must be from 5 to 240`);
     }
@@ -276,6 +282,8 @@ export const WORKER_SECTIONS = ["Mission", "Working rules", "Completion rule"];
 const WORKER_FIELDS = new Set([
   "id", "release", "name", "title", "tagline", "description", "category", "author", "license", "tags", "color",
   "featured", "outcomes", "setupMinutes", "apps", "playbooks",
+  // Optional multi-agent extension (backward compatible: a worker with none of these behaves exactly as before).
+  "agents", "chiefOfStaff", "rooms", "routines",
 ]);
 
 /** The text under one `## heading` of a Markdown body. */
@@ -334,18 +342,114 @@ export function validateWorker(markdown, slug, playbookNames) {
       if (!playbookNames.has(name)) fail(`playbook "${name}" does not exist as playbooks/${name}/SKILL.md`);
     }
   }
+  const workerPlaybooks = new Set(Array.isArray(worker.playbooks) ? worker.playbooks : []);
+
+  // Optional multi-agent extension. A worker is always the primary agent `worker.id` (name/title/description/color
+  // above); `agents` lists its teammates, `rooms` are shared chat rooms between them, and `routines` are scheduled
+  // automations (always installed paused). A worker with none of these fields behaves exactly as before.
+  const agentKeys = new Set([worker.id]);
+  if (worker.agents !== undefined) {
+    if (!list(worker.agents, 49)) fail("agents allows at most 49 teammates in addition to the worker itself (50 agents total)");
+    for (const [index, agent] of (Array.isArray(worker.agents) ? worker.agents : []).entries()) {
+      const at = `agents[${index}]`;
+      if (!text(agent?.key, 64) || !KEY.test(agent.key) || agent.key === worker.id) fail(`${at}.key is invalid`);
+      else if (agentKeys.has(agent.key)) fail(`${at}.key is listed twice: ${agent.key}`);
+      else agentKeys.add(agent.key);
+      if (!text(agent?.name, 100)) fail(`${at}.name is required`);
+      if (typeof agent?.title !== "string" || agent.title.length > 200) fail(`${at}.title is required (at most 200 characters)`);
+      if (typeof agent?.description !== "string" || agent.description.length > 4000) fail(`${at}.description is required (at most 4000 characters)`);
+      if (!COLORS.has(agent?.color)) fail(`${at}.color must be one of: ${[...COLORS].join(", ")}`);
+      if (agent?.playbooks !== undefined && (!list(agent.playbooks, 30) || agent.playbooks.some((name) => !workerPlaybooks.has(name)))) {
+        fail(`${at}.playbooks must be a subset of this worker's own playbooks`);
+      }
+    }
+  }
+  if (worker.chiefOfStaff !== undefined && !agentKeys.has(worker.chiefOfStaff)) fail(`chiefOfStaff "${worker.chiefOfStaff}" is not an agent key`);
+
+  if (worker.rooms !== undefined) {
+    if (!list(worker.rooms, 30)) fail("rooms allows at most 30 entries");
+    const roomKeys = new Set();
+    for (const [index, room] of (Array.isArray(worker.rooms) ? worker.rooms : []).entries()) {
+      const at = `rooms[${index}]`;
+      if (!text(room?.key, 64) || roomKeys.has(room.key)) fail(`${at}.key is invalid or repeated`);
+      else roomKeys.add(room.key);
+      if (!text(room?.name, 100) || typeof room?.bulletin !== "string" || room.bulletin.length > 12_000) fail(`${at} needs name and bulletin`);
+      if (!list(room?.members, 50) || room.members.length === 0 || room.members.some((key) => !agentKeys.has(key))) {
+        fail(`${at}.members names an agent that does not exist`);
+      }
+      const responder = room?.defaultResponder;
+      if (!responder || !["agent", "everyone", "mentions"].includes(responder.kind)) fail(`${at}.defaultResponder.kind must be agent, everyone or mentions`);
+      else if (responder.kind === "agent" && !room.members?.includes(responder.agent)) fail(`${at}.defaultResponder must be a member of the room`);
+    }
+  }
+
+  if (worker.routines !== undefined) {
+    if (!list(worker.routines, 50)) fail("routines allows at most 50 entries");
+    const routineKeys = new Set();
+    for (const [index, routine] of (Array.isArray(worker.routines) ? worker.routines : []).entries()) {
+      const at = `routines[${index}]`;
+      if (!text(routine?.key, 64) || !KEY.test(routine.key) || routineKeys.has(routine.key)) fail(`${at}.key is invalid or repeated`);
+      else routineKeys.add(routine.key);
+      if (!text(routine?.name, 80) || !text(routine?.prompt, 20_000) || !agentKeys.has(routine?.agent)) fail(`${at} needs name, prompt and an existing agent`);
+      if (routine?.enabledAfterInstall !== false) fail(`${at}: a routine must install switched off (\`enabledAfterInstall: false\`); its owner turns it on`);
+      if (!ROUTINE_RUNTIMES.has(routine?.runOn)) fail(`${at}.runOn must be ${[...ROUTINE_RUNTIMES].join(" or ")}`);
+      if (!Number.isInteger(routine?.durationMinutes) || routine.durationMinutes < 5 || routine.durationMinutes > 240) {
+        fail(`${at}.durationMinutes must be from 5 to 240`);
+      }
+      const schedule = routine?.schedule;
+      if (schedule?.type === "daily") {
+        const days = schedule.weekdays;
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time ?? "")) fail(`${at}.schedule.time must be HH:MM, for example "09:00"`);
+        if (!Array.isArray(days) || days.length === 0 || days.length > 7 || days.some((day) => !Number.isInteger(day) || day < 0 || day > 6) || new Set(days).size !== days.length) {
+          fail(`${at}.schedule.weekdays must be distinct numbers 0-6 (0 = Sunday)`);
+        }
+      } else if (schedule?.type !== "once" || !Number.isInteger(schedule.at)) {
+        fail(`${at}.schedule must be daily (time + weekdays) or once (at)`);
+      }
+    }
+  }
+
   return errors;
 }
 
 const yamlBlock = (value) => stringifyYaml(value, { lineWidth: 0 }).trimEnd();
 
-/** The BotMRR Markdown v1 file QACI Duo installs: one bot whose skills are the worker's playbooks. */
+/** The QACI Duo package v1 file QACI Duo installs: a worker is one or more agents sharing the worker's playbooks. */
 export function workerPackage(markdown, playbooksByName) {
   const { metadata: worker, body } = splitPackage(markdown);
   const playbooks = worker.playbooks.map((name) => playbooksByName.get(name));
   const apps = worker.apps ?? [];
+  const extraAgents = worker.agents ?? [];
+  const playbooksFor = (agent) => (agent?.playbooks?.length ? agent.playbooks : worker.playbooks);
+  const agents = [
+    {
+      key: worker.id,
+      name: worker.name,
+      title: worker.title,
+      description: worker.description,
+      appearance: { color: worker.color },
+      playbooks: playbooksFor(undefined),
+    },
+    ...extraAgents.map((agent) => ({
+      key: agent.key,
+      name: agent.name,
+      title: agent.title,
+      description: agent.description,
+      appearance: { color: agent.color },
+      playbooks: playbooksFor(agent),
+    })),
+  ];
+  const chiefOfStaff = worker.chiefOfStaff ?? worker.id;
+  const rooms = (worker.rooms ?? []).map((room) => ({
+    key: room.key, name: room.name, members: room.members, bulletin: room.bulletin, defaultResponder: room.defaultResponder,
+  }));
+  const routines = (worker.routines ?? []).map((routine) => ({
+    key: routine.key, name: routine.name, agent: routine.agent, prompt: routine.prompt, runOn: routine.runOn,
+    schedule: routine.schedule, durationMinutes: routine.durationMinutes, enabledAfterInstall: false,
+  }));
   const pkg = {
-    botmrr: 1,
+    format: PACKAGE_FORMAT,
+    version: 1,
     id: worker.id,
     release: String(worker.release),
     name: worker.name,
@@ -359,15 +463,10 @@ export function workerPackage(markdown, playbooksByName) {
     outcomes: worker.outcomes,
     setupMinutes: worker.setupMinutes ?? 5,
     requirements: { apps, capabilities: [], platforms: ["any"] },
-    agents: [{
-      key: worker.id,
-      name: worker.name,
-      title: worker.title,
-      description: worker.description,
-      appearance: { color: worker.color },
-      playbooks: playbooks.map((playbook) => playbook.name),
-    }],
-    chiefOfStaff: worker.id,
+    agents,
+    chiefOfStaff,
+    ...(rooms.length ? { rooms } : {}),
+    ...(routines.length ? { routines } : {}),
     playbooks: playbooks.map((playbook) => ({
       key: playbook.name,
       name: playbook.title,
@@ -376,6 +475,19 @@ export function workerPackage(markdown, playbooksByName) {
       instructions: playbook.body,
     })),
   };
+  const teamSection = agents.map((agent) => `- **${agent.name} — ${agent.title}.** ${agent.description}`).join("\n");
+  const chiefName = agents.find((agent) => agent.key === chiefOfStaff)?.name ?? worker.name;
+  const chiefOfStaffSection = agents.length > 1
+    ? `\`${chiefOfStaff}\` (${chiefName}) is the Chief of Staff: it takes the request, delegates to the right teammate and returns one answer to the user.`
+    : `\`${worker.id}\` (${worker.name}) is the only agent: it takes the request, picks the right playbook and answers the user.`;
+  const roomsSection = rooms.length
+    ? ["", "## Shared rooms", "", ...rooms.map((room) =>
+        `- **${room.name}** (\`${room.key}\`) — members: ${room.members.map((key) => `\`${key}\``).join(", ")}.${room.bulletin ? ` ${room.bulletin}` : ""}`)]
+    : [];
+  const routinesSection = routines.length
+    ? ["", "## Suggested routines", "", ...routines.map((routine) =>
+        `- **${routine.name}** (\`${routine.key}\`), owned by \`${routine.agent}\` — installs paused; its owner turns it on.`)]
+    : [];
   return [
     "---",
     yamlBlock(pkg),
@@ -405,11 +517,13 @@ export function workerPackage(markdown, playbooksByName) {
     "",
     "## Team",
     "",
-    `- **${worker.name} — ${worker.title}.** ${worker.description}`,
+    teamSection,
     "",
     "## Chief of Staff",
     "",
-    `\`${worker.id}\` (${worker.name}) is the only agent: it takes the request, picks the right playbook and answers the user.`,
+    chiefOfStaffSection,
+    ...roomsSection,
+    ...routinesSection,
     "",
     "## Playbooks",
     "",
@@ -427,20 +541,31 @@ const oneLine = (value, max) => {
   return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line;
 };
 
-/** Everything the team-library catalog expects for one worker: package, legacy team file, README, skills. */
+/** Everything the team-library catalog expects for one worker: package, team manifest, README, skills. */
 export function workerLibraryFiles(markdown, playbooksByName) {
   const { metadata: worker } = splitPackage(markdown);
   const id = worker.id;
   const playbooks = worker.playbooks.map((name) => playbooksByName.get(name));
+  const extraAgents = worker.agents ?? [];
+  const members = [
+    { key: id, name: worker.name, title: worker.title, description: worker.description, appearance: { color: worker.color } },
+    ...extraAgents.map((agent) => ({ key: agent.key, name: agent.name, title: agent.title, description: agent.description, appearance: { color: agent.color } })),
+  ];
+  const chiefOfStaff = worker.chiefOfStaff ?? id;
+  const configuredRoom = (worker.rooms ?? [])[0];
+  const room = configuredRoom
+    ? {
+        name: configuredRoom.name,
+        bulletin: configuredRoom.bulletin,
+        defaultResponder: configuredRoom.defaultResponder.kind === "agent"
+          ? { kind: "member", member: configuredRoom.defaultResponder.agent }
+          : { kind: configuredRoom.defaultResponder.kind },
+      }
+    : { name: worker.name, bulletin: "", defaultResponder: { kind: "member", member: chiefOfStaff } };
   const manifest = {
-    format: "openmaus.team",
+    format: TEAM_FORMAT,
     version: 1,
-    team: {
-      name: worker.name,
-      description: oneLine(worker.tagline, 500),
-      members: [{ key: id, name: worker.name, title: worker.title, description: worker.description, appearance: { color: worker.color } }],
-      room: { name: worker.name, bulletin: "", defaultResponder: { kind: "member", member: id } },
-    },
+    team: { name: worker.name, description: oneLine(worker.tagline, 500), members, room },
   };
   const skills = playbooks.map((playbook) => ({ path: `teams/${id}/skills/${playbook.name}/SKILL.md`, content: playbook.raw }));
   const readme = [
@@ -468,7 +593,7 @@ export function workerLibraryFiles(markdown, playbooksByName) {
     package: `packages/${id}.md`,
     manifest: `teams/${id}/team.mausteam.json`,
     readme: `teams/${id}/README.md`,
-    members: 1,
+    members: members.length,
     skills: skills.map((skill) => skill.path),
     requires: { apps: (worker.apps ?? []).map((app) => app.label) },
   };
@@ -486,7 +611,7 @@ export function workerLibraryFiles(markdown, playbooksByName) {
 /** The catalog QACI Duo reads, workers ordered featured first, then by name. */
 export function buildCatalog(entries) {
   const teams = [...entries].sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || a.name.localeCompare(b.name));
-  return { format: "openmaus.catalog", version: 1, teams };
+  return { format: CATALOG_FORMAT, version: 1, teams };
 }
 
 const ALLOWED_FILES = [
@@ -495,9 +620,15 @@ const ALLOWED_FILES = [
   /^templates\/(?:worker\.md|playbook\/SKILL\.md)$/,
   /^scripts\/[a-z0-9-]+\.mjs$/,
   /^tests\/[a-z0-9.-]+\.mjs$/,
+  // Declarative JSON Schema documenting the hand-written validators above; see PORTING_NOTES.md.
+  /^schema\/[a-z0-9.-]+\.schema\.json$/,
   /^\.github\/(?:CODEOWNERS|PULL_REQUEST_TEMPLATE\.md|workflows\/[a-z0-9-]+\.yml|ISSUE_TEMPLATE\/[a-z0-9-]+\.yml)$/,
-  /^(?:README|CONTRIBUTING|FORMAT|SECURITY)\.md$/,
-  /^(?:LICENSE|package\.json|package-lock\.json|\.gitignore)$/,
+  /^(?:README|CONTRIBUTING|FORMAT|SECURITY|PORTING_NOTES)\.md$/,
+  /^(?:LICENSE|package\.json|package-lock\.json|\.gitignore|next\.config\.ts|tsconfig\.json|next-env\.d\.ts)$/,
+  // The public browsing website (Next.js App Router); see PORTING_NOTES.md.
+  /^app\/(?:[a-z0-9_.[\]-]+\/)*[a-z0-9_.[\]-]+\.(?:tsx|ts|css|svg)$/,
+  /^components\/[A-Za-z0-9.-]+\.tsx$/,
+  /^lib\/[a-z0-9.-]+\.ts$/,
 ];
 
 /** Files a pull request may not add: anything outside the known layout (binaries, scripts beside a playbook, …). */

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/vanhaito/qaci-duo-playbooks/main/schema/worker.schema.json",
+  "title": "QACI Duo Digital Worker",
+  "description": "The YAML frontmatter of workers/<id>.md, as checked by validateWorker() in scripts/lib.mjs. This schema documents that hand-written validator; scripts/lib.mjs remains the source of truth and the authoritative CI gate — this is tooling/editor documentation only. `agents`, `chiefOfStaff`, `rooms` and `routines` are an optional extension: a worker with none of them is exactly the single-agent shape every worker file used before this extension, and the four worker files in this repository today use none of them. See FORMAT.md and PORTING_NOTES.md.",
+  "type": "object",
+  "required": [
+    "id", "release", "name", "title", "tagline", "description", "category", "author", "license", "color",
+    "outcomes", "playbooks"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "description": "Must equal the file name workers/<id>.md." },
+    "release": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "tagline": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "description": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "category": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "author": {
+      "type": "object",
+      "required": ["name"],
+      "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 100 } },
+      "additionalProperties": true
+    },
+    "license": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "tags": { "type": "array", "maxItems": 30, "items": { "type": "string", "maxLength": 80 } },
+    "color": { "enum": ["green", "blue", "red", "orange", "purple", "cyan", "pink", "yellow", "teal", "coral"] },
+    "featured": { "type": "boolean" },
+    "outcomes": {
+      "type": "array", "minItems": 1, "maxItems": 12,
+      "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+    },
+    "setupMinutes": { "type": "integer", "minimum": 1, "maximum": 240 },
+    "apps": {
+      "type": "array", "maxItems": 30,
+      "items": {
+        "type": "object",
+        "required": ["slug", "label", "reason"],
+        "properties": {
+          "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$", "maxLength": 64 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "optional": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "playbooks": {
+      "description": "1-30 folder names from playbooks/, each of which must exist.",
+      "type": "array", "minItems": 1, "maxItems": 30,
+      "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+    },
+    "agents": {
+      "description": "Optional extension: teammates in addition to the worker itself (which is always agent `id`). At most 49, for 50 agents total.",
+      "type": "array", "maxItems": 49,
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "title", "description", "color"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$", "maxLength": 64, "description": "Must differ from this worker's own id and from every other agent's key." },
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "title": { "type": "string", "maxLength": 200 },
+          "description": { "type": "string", "maxLength": 4000 },
+          "color": { "enum": ["green", "blue", "red", "orange", "purple", "cyan", "pink", "yellow", "teal", "coral"] },
+          "playbooks": {
+            "description": "Subset of this worker's own `playbooks` that this agent uses. Defaults to all of them when omitted.",
+            "type": "array", "maxItems": 30, "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "chiefOfStaff": {
+      "description": "The lead agent's key (this worker's `id`, or one of `agents[].key`). Defaults to the worker's own id.",
+      "type": "string"
+    },
+    "rooms": {
+      "description": "Optional extension: shared chat rooms between this worker's agents.",
+      "type": "array", "maxItems": 30,
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "bulletin", "members", "defaultResponder"],
+        "properties": {
+          "key": { "type": "string", "maxLength": 64 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "bulletin": { "type": "string", "maxLength": 12000 },
+          "members": {
+            "description": "Agent keys (this worker's `id` and/or `agents[].key`); at least one.",
+            "type": "array", "minItems": 1, "maxItems": 50, "items": { "type": "string" }
+          },
+          "defaultResponder": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["kind", "agent"],
+                "properties": { "kind": { "const": "agent" }, "agent": { "type": "string", "description": "Must be one of this room's members." } },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": ["kind"],
+                "properties": { "kind": { "enum": ["everyone", "mentions"] } },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "routines": {
+      "description": "Optional extension: scheduled automations. Always installs paused — enabledAfterInstall must be false.",
+      "type": "array", "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "agent", "prompt", "runOn", "durationMinutes", "enabledAfterInstall", "schedule"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$", "maxLength": 64 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "agent": { "type": "string", "description": "Must be this worker's `id` or one of `agents[].key`." },
+          "prompt": { "type": "string", "minLength": 1, "maxLength": 20000 },
+          "runOn": { "enum": ["duo", "cloud"] },
+          "durationMinutes": { "type": "integer", "minimum": 5, "maximum": 240 },
+          "enabledAfterInstall": { "const": false },
+          "schedule": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["type", "time", "weekdays"],
+                "properties": {
+                  "type": { "const": "daily" },
+                  "time": { "type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$" },
+                  "weekdays": {
+                    "type": "array", "minItems": 1, "maxItems": 7,
+                    "items": { "type": "integer", "minimum": 0, "maximum": 6 },
+                    "uniqueItems": true
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": ["type", "at"],
+                "properties": { "type": { "const": "once" }, "at": { "type": "integer" } },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

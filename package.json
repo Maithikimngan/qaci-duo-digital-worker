@@ -6,10 +6,25 @@
   "description": "QACI Duo Digital Workers and playbooks, contributed by pull request",
   "scripts": {
     "test": "node scripts/validate.mjs && node --test tests/*.test.mjs",
-    "build": "node scripts/build.mjs dist"
+    "build": "node scripts/build.mjs dist",
+    "site:dev": "next dev --port 3014",
+    "site:build": "next build",
+    "site:start": "next start --port 3014",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "lucide-react": "^0.468.0",
+    "next": "16.4.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
     "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "typescript": "7.0.2"
   },
   "engines": {
     "node": ">=20"

@@ -1,0 +1,69 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+// Ported from openmausbot-teams' app/publish/page.tsx, rewritten: that page pointed at
+// github.com/milind-soni/openmausbot-teams (a public, unrelated repository) and BotMRR's own "fork this public
+// package" flow. This repository is private, so the real flow is different: ask a code owner for access, then open
+// a pull request. Content below is drawn from this repository's own CONTRIBUTING.md / FORMAT.md. See
+// PORTING_NOTES.md.
+export const metadata: Metadata = {
+  title: "Contribute a Digital Worker or playbook",
+  description: "How to add or improve a QACI Duo Digital Worker or playbook in this private repository.",
+};
+
+const repoUrl = "https://github.com/vanhaito/qaci-duo-playbooks";
+
+const steps = [
+  ["01", "Get access", "This repository is private. Ask a code owner (see .github/CODEOWNERS) to add you as a collaborator, then create a branch."],
+  ["02", "Write the file(s)", "A new capability is playbooks/<name>/SKILL.md, from templates/playbook/SKILL.md. A new role is workers/<id>.md, from templates/worker.md, listing the playbooks it carries. Follow FORMAT.md exactly — the folder/file name must match the name/id field inside it."],
+  ["03", "Check it locally, then open a pull request", "npm ci --ignore-scripts, then npm test (and optionally npm run build to see the generated file). Push your branch and open a pull request against main — CI runs the same checks, then a code owner reads the content."],
+];
+
+export default function PublishPage() {
+  return (
+    <main className="publish-page simple-page">
+      <section className="publish-hero simple-page-hero">
+        <p className="overline">CONTRIBUTE TO QACI DUO PLAYBOOKS</p>
+        <h1>Add a capability, or a role that carries several.</h1>
+        <p>A playbook is one procedure that produces a result. A Digital Worker is a role — it carries several playbooks and knows which one to pick.</p>
+        <div className="detail-actions">
+          <a className="button button-primary" href={`${repoUrl}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer">Read CONTRIBUTING.md ↗</a>
+          <a className="button button-secondary" href={`${repoUrl}/blob/main/FORMAT.md`} target="_blank" rel="noreferrer">Read the file format ↗</a>
+        </div>
+      </section>
+
+      <section className="publish-steps">
+        {steps.map(([number, title, body]) => (
+          <article key={number}>
+            <span>{number}</span><h2>{title}</h2><p>{body}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="package-anatomy">
+        <div>
+          <span className="section-kicker">A DIGITAL WORKER</span>
+          <h2>One role, several playbooks.</h2>
+          <p>workers/&lt;id&gt;.md lists the playbooks it carries and (optionally) extra teammates, a shared room, and paused routines — see FORMAT.md.</p>
+        </div>
+        <pre><code>{`workers/<id>.md
+├── name, title, tagline
+├── outcomes + setupMinutes
+├── apps (declared, no credentials)
+├── playbooks: [...]
+├── agents / rooms / routines (optional)
+└── Mission, Working rules,
+    Completion rule`}</code></pre>
+      </section>
+
+      <section className="never-package">
+        <span className="section-kicker">NEVER INCLUDE</span>
+        <h2>A playbook is instructions — not access.</h2>
+        <div><span>Credentials</span><span>Tokens or passwords</span><span>Personal data</span><span>Internal links</span><span>Routines enabled by default</span><span>Binaries or extra files</span></div>
+        <p className="boundary-note">Every routine installs paused, and QACI Duo connects no apps on its own — the user connects their own.</p>
+      </section>
+
+      <p className="simple-page-back"><Link href="/">← Back to all workers</Link></p>
+    </main>
+  );
+}

@@ -35,6 +35,8 @@ In the research workflow, **each step is one worker and each task within a step 
   **Advanced mode** to see *Skills*), switch it on, **Assign** it to a worker, and give the worker a real task.
 - **A whole worker:** run `npm run build`, then in QACI Duo open **+ → Templates → Import** and choose (or drop) the
   generated file `dist/packages/<worker>.md`. QACI Duo shows a preview before anything is added.
+- **Browse locally:** `npm run site:dev` starts a small read-only site that lists every worker and playbook already
+  in the repository (including yours on your branch) and lets you read or copy the generated Markdown.
 
 ## Review
 

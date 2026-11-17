@@ -20,6 +20,31 @@ outcomes:
 setupMinutes: 5
 playbooks:
   - your-playbook # folder names under playbooks/
+# Optional: a worker can carry more than one agent, a shared room, and paused routines. See FORMAT.md and
+# schema/worker.schema.json. A worker with none of the fields below is unchanged — this is purely additive.
+# agents:
+#   - key: your-worker-assistant
+#     name: Your Worker's Assistant
+#     title: A second role on this worker
+#     description: What this extra agent does.
+#     color: blue
+#     playbooks: [your-playbook] # subset of playbooks: above; defaults to all of them
+# chiefOfStaff: your-worker # one of: this worker's own id, or an agents[].key; defaults to this worker's id
+# rooms:
+#   - key: your-room
+#     name: Your Room
+#     bulletin: What this shared room is for.
+#     members: [your-worker, your-worker-assistant]
+#     defaultResponder: { kind: agent, agent: your-worker }
+# routines:
+#   - key: your-routine
+#     name: Your Routine
+#     agent: your-worker
+#     prompt: What to do each time this routine runs.
+#     runOn: duo # duo or cloud
+#     durationMinutes: 15
+#     enabledAfterInstall: false # always false; the user turns it on
+#     schedule: { type: daily, time: "09:00", weekdays: [1, 2, 3, 4, 5] } # or { type: once, at: <epoch ms> }
 ---
 
 # Your Worker

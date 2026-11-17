@@ -112,6 +112,32 @@ test("the published library has the files the catalog points at, skills copied b
   const manifest = JSON.parse(byPath.get(entry.manifest));
   assert.deepEqual(manifest.team.room.defaultResponder, { kind: "member", member: "literature-scout" });
   const catalog = buildCatalog([{ ...entry, featured: false, name: "Z" }, entry]);
-  assert.equal(catalog.format, "openmaus.catalog");
+  assert.equal(catalog.format, "qaci-duo.catalog");
   assert.equal(catalog.teams[0].slug, "literature-scout", "featured first");
+});
+
+test("a worker may declare extra agents, a shared room and a paused routine", () => {
+  const multi = worker
+    .replace("license: MIT\n", `license: MIT\nagents:\n  - key: scout-assistant\n    name: Scout Assistant\n    title: Second reader\n    description: Double-checks sourcing.\n    color: cyan\nchiefOfStaff: literature-scout\nrooms:\n  - key: research-room\n    name: Research room\n    bulletin: Shared findings land here.\n    members: [literature-scout, scout-assistant]\n    defaultResponder: {kind: agent, agent: literature-scout}\nroutines:\n  - key: weekly-digest\n    name: Weekly digest\n    agent: literature-scout\n    prompt: Summarise this week's survey findings.\n    runOn: duo\n    durationMinutes: 15\n    enabledAfterInstall: false\n    schedule: {type: daily, time: "09:00", weekdays: [1]}\n`);
+  assert.deepEqual(validateWorker(multi, "literature-scout", names), []);
+  const generated = workerPackage(multi, playbooks);
+  assert.deepEqual(validatePackage(generated, "literature-scout"), []);
+  const { metadata: pkg } = splitPackage(generated);
+  assert.equal(pkg.agents.length, 2);
+  assert.equal(pkg.chiefOfStaff, "literature-scout");
+  assert.equal(pkg.rooms[0].defaultResponder.agent, "literature-scout");
+  assert.equal(pkg.routines[0].runOn, "duo");
+  assert.equal(pkg.routines[0].enabledAfterInstall, false);
+  const { entry: multiEntry, files } = workerLibraryFiles(multi, playbooks);
+  assert.equal(multiEntry.members, 2);
+  const manifest = JSON.parse(new Map(files.map((file) => [file.path, file.content])).get(multiEntry.manifest));
+  assert.equal(manifest.format, "qaci-duo.team");
+  assert.equal(manifest.team.members.length, 2);
+  assert.deepEqual(manifest.team.room.defaultResponder, { kind: "member", member: "literature-scout" });
+});
+
+test("a routine that does not install paused, or an unknown runOn, is refused", () => {
+  const base = `${worker.replace("license: MIT\n", 'license: MIT\nroutines:\n  - key: digest\n    name: Digest\n    agent: literature-scout\n    prompt: Summarise.\n    runOn: PLACEHOLDER\n    durationMinutes: 15\n    enabledAfterInstall: PAUSE\n    schedule: {type: once, at: 1}\n')}`;
+  has(validateWorker(base.replace("PLACEHOLDER", "duo").replace("PAUSE", "true"), "literature-scout", names), "must install switched off");
+  has(validateWorker(base.replace("PLACEHOLDER", "maus").replace("PAUSE", "false"), "literature-scout", names), "runOn must be");
 });
