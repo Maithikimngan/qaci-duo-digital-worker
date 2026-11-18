@@ -36,6 +36,8 @@ FORMAT.md's *Playbook vs. skill* section.
 
 - **Install a whole worker:** **+ → Templates → Community templates**, pick the worker, **Load**, then **Add team**.
   QACI Duo creates one bot with all of the worker's playbooks.
+- **Install from a file directly:** use `packages/<id>.json` on the `library` branch, not `packages/<id>.md` —
+  the `.json` file is the shape the real app's own import actually reads today; see FORMAT.md.
 - **Add one playbook to a worker you already have:** open the playbook's `SKILL.md` on the
   [`library` branch](https://github.com/vanhaito/qaci-duo-playbooks/tree/library/playbooks) (choose **Raw**), copy it,
   and paste it into **Settings → Skills → Import a skill**. Settings shows *Skills* in **Advanced mode**. An imported

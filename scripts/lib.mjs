@@ -575,10 +575,18 @@ export function validateWorker(markdown, slug, playbookNames) {
 
 const yamlBlock = (value) => stringifyYaml(value, { lineWidth: 0 }).trimEnd();
 
-/** The QACI Duo package v2 file QACI Duo installs: a worker is one or more agents sharing the worker's playbooks,
- * embedded skills and declared connections. */
-export function workerPackage(markdown, playbooksByName) {
-  const { metadata: worker, body } = splitPackage(markdown);
+// The real QACI Duo app's own package format (shared/package-format.ts's packageDocumentSchema): a flat
+// `{format: "openmaus.package", version: 2, package: {...}}` envelope, nested — not the flat top-level shape
+// this repository's own PACKAGE_FORMAT ("qaci-duo.package") uses for its .md files. The two are independent: a
+// worker's generated packages/<id>.md (PACKAGE_FORMAT, for this repository's own catalog/team-library mechanism)
+// and packages/<id>.json (REAL_PACKAGE_FORMAT, for the real app's Templates-style JSON import) both come from
+// the same `packageFields()` below, just wrapped differently — see PORTING_NOTES.md.
+export const REAL_PACKAGE_FORMAT = "openmaus.package";
+export const REAL_PACKAGE_VERSION = 2;
+
+/** Everything a worker's generated package needs, independent of how it gets wrapped (this repository's own
+ * flat `.md` shape vs. the real app's nested `{format, version, package}` JSON shape). */
+function packageFields(worker, playbooksByName) {
   const playbookNames = worker.playbooks ?? [];
   const skillNames = worker.skills ?? [];
   const playbooks = playbookNames.map((name) => playbooksByName.get(name));
@@ -612,8 +620,6 @@ export function workerPackage(markdown, playbooksByName) {
     schedule: routine.schedule, durationMinutes: routine.durationMinutes, enabledAfterInstall: false,
   }));
   const pkg = {
-    format: PACKAGE_FORMAT,
-    version: PACKAGE_VERSION,
     id: worker.id,
     release: String(worker.release),
     name: worker.name,
@@ -640,6 +646,27 @@ export function workerPackage(markdown, playbooksByName) {
     ...(skills.length ? { skills: { version: 1, entries: skills.map((playbook) => skillEntry(playbook, worker.id)) } } : {}),
     ...(worker.examples?.length ? { examples: worker.examples } : {}),
   };
+  return { pkg, agents, rooms, routines, playbooks, skills, connections, apps, chiefOfStaff };
+}
+
+/** The real QACI Duo app's own package v2 document — `{format: "openmaus.package", version: 2, package: {...}}`,
+ * nested, matching shared/package-format.ts's packageDocumentSchema exactly. This is what the real app's
+ * Templates-style JSON import (and docs/playbooks/*.json in qaci-duo) actually reads; confirmed by importing
+ * one of these into a real, unmodified QACI Duo server (see PORTING_NOTES.md) — unlike packages/<id>.md below,
+ * which this repository's own PACKAGE_FORMAT rename made unreadable by the real app's Markdown import path. */
+export function workerRealPackage(markdown, playbooksByName) {
+  const { metadata: worker } = splitPackage(markdown);
+  const { pkg } = packageFields(worker, playbooksByName);
+  return { format: REAL_PACKAGE_FORMAT, version: REAL_PACKAGE_VERSION, package: pkg };
+}
+
+/** The QACI Duo package v2 file this repository's own catalog/team-library mechanism uses: a worker is one or
+ * more agents sharing the worker's playbooks, embedded skills and declared connections. See workerRealPackage()
+ * for the shape the real app's own JSON import actually reads. */
+export function workerPackage(markdown, playbooksByName) {
+  const { metadata: worker, body } = splitPackage(markdown);
+  const { pkg: fields, agents, rooms, routines, playbooks, skills, connections, apps, chiefOfStaff } = packageFields(worker, playbooksByName);
+  const pkg = { format: PACKAGE_FORMAT, version: PACKAGE_VERSION, ...fields };
   const teamSection = agents.map((entry) => `- **${entry.name} — ${entry.title}.** ${entry.description}`).join("\n");
   const chiefName = agents.find((entry) => entry.key === chiefOfStaff)?.name ?? worker.name;
   const chiefOfStaffSection = agents.length > 1

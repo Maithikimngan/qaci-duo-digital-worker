@@ -1,6 +1,6 @@
 ---
 id: adlc
-release: 4.0.2
+release: 4.0.3
 name: QACI Duo ADLC
 title: Coordinates PM, Tech Lead, Engineer and Deployer
 tagline: "Một team phần mềm 4 người: PM, Tech Lead, Engineer và Deployer. Giao việc cho PM, team tự làm, đưa lên GitHub và deploy demo."
@@ -16,6 +16,15 @@ outcomes:
   - Bật lại card duyệt (SPEC, plan, push, merge) bất cứ lúc nào, không phải đổi tài khoản.
   - Đưa code lên GitHub của chính bạn, tạo release, đăng FCode Market và deploy demo lên Railway, luôn hỏi bạn trước mỗi bước ra ngoài.
 setupMinutes: 10
+apps:
+  - slug: github
+    label: GitHub
+    reason: Deployer đưa code đã merge lên GitHub của chủ và tạo release.
+    optional: true
+  - slug: railway
+    label: Railway
+    reason: Deployer deploy demo lên Railway khi chủ muốn có link thử.
+    optional: true
 skills:
   - adlc-triage
   - adlc-feature

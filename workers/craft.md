@@ -1,6 +1,6 @@
 ---
 id: craft
-release: 1.1.1
+release: 1.1.2
 name: QACI Duo App Rebuild
 title: Coordinates Analyst, Engineer, Checker and Deployer
 tagline: "Analyst, Engineer và Checker: dựng lại một app chủ có quyền phân tích thành bản mới của chủ, theo đúng clean room."
@@ -16,6 +16,15 @@ outcomes:
   - Có PARITY.md đo độ khớp hành vi hai bản (ảnh chụp nhiều bề rộng, thao tác), kèm khác biệt còn lại.
   - Mọi bước chạm bản gốc đều có cơ sở quyền và card của chủ trong nhật ký.
 setupMinutes: 20
+apps:
+  - slug: github
+    label: GitHub
+    reason: Deployer đưa bản mới đã merge lên GitHub của chủ và tạo release.
+    optional: true
+  - slug: railway
+    label: Railway
+    reason: Deployer deploy demo lên Railway khi chủ muốn có link thử.
+    optional: true
 skills:
   - rebuild-intake
   - rebuild-study

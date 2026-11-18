@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   buildCatalog, disallowedFiles, readPlaybook, scanSecrets, splitPackage, validatePackage, validatePlaybook, validateWorker,
-  workerLibraryFiles, workerPackage,
+  workerLibraryFiles, workerPackage, workerRealPackage,
 } from "../scripts/lib.mjs";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
@@ -352,4 +352,17 @@ test("a connection must be a plain https address with no embedded credentials, a
 test("a team brief that is too large is refused", () => {
   const huge = worker.replace("setupMinutes: 3\n", `setupMinutes: 3\nteamBrief: "${"x".repeat(24_001)}"\n`);
   has(validateWorker(huge, "sample-worker", names), "teamBrief must be text under");
+});
+
+test("workerRealPackage wraps the same fields in the real app's own nested shape, not this repository's", () => {
+  const real = workerRealPackage(worker, playbooks);
+  assert.equal(real.format, "openmaus.package");
+  assert.equal(real.version, 2);
+  assert.equal(real.package.id, "sample-worker");
+  assert.deepEqual(real.package.agents.map((agent) => agent.key), ["sample-worker"]);
+  assert.deepEqual(real.package.playbooks.map((entry) => entry.key), ["sample-playbook"]);
+  // The two shapes share the same field-building code, so they can never silently drift apart.
+  const { metadata: own } = splitPackage(workerPackage(worker, playbooks));
+  assert.equal(real.package.name, own.name);
+  assert.deepEqual(real.package.team, own.team);
 });

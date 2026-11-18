@@ -101,7 +101,14 @@ under a `team: {name, leader, brief}` object. It also writes the `catalog.json` 
 QACI Duo reads, each worker's team manifest (`teams/<id>/team.mausteam.json`, `format: qaci-duo.team`), and a copy
 of every `playbooks/<name>/SKILL.md` (playbook or skill) for individual import.
 
-> **Format rename.** This repository's package/manifest/catalog format is adapted from the
+It also writes `packages/<id>.json` — the **same content**, wrapped as the real QACI Duo app actually reads it
+today: `{format: "openmaus.package", version: 2, package: {...}}`. This is the file to use for the app's
+Templates-style JSON import (and is what `docs/playbooks/*.json` in `qaci-duo` itself are); confirmed by
+importing one into a real, unmodified QACI Duo server. `packages/<id>.md`, by contrast, is this repository's own
+catalog/team-library shape — the real app's Markdown import path does not currently read it; see
+[PORTING_NOTES.md](PORTING_NOTES.md).
+
+> **Format rename.** This repository's `.md`/catalog/manifest format is adapted from the
 > [openmausbot-teams](https://github.com/milind-soni/openmausbot-teams) project (MIT); see
 > [PORTING_NOTES.md](PORTING_NOTES.md) for the exact old → new discriminator strings and why the real QACI Duo app's
 > parser needs updating to read files generated from `main` onward.

@@ -168,7 +168,42 @@ A small, unrelated fix landed alongside this: `validatePlaybook()` no longer cap
 (which still enforces its own real 24,000-character cap, in `validatePackage`, at the point a playbook is actually
 used that way).
 
-## 6. Verification
+## 6. Later addition: `packages/<id>.json`, the shape the real app actually reads
+
+Testing ADLC against a real, unmodified QACI Duo server (an isolated fixture via
+`node --experimental-strip-types scripts/control-omb.ts launch`, never the owner's live app — see that repo's own
+`docs/verification/README.md`) found that `packages/<id>.md`, as this repository generates it, **cannot be
+imported** by the real app at all, for reasons independent of the format-string rename in section 1:
+
+- The real app's Markdown import path (`shared/package-format.ts`'s `markdownDocument()`) only recognizes a file
+  as a package at all if its frontmatter has a literal `botmrr: 1` — checked by regex
+  (`isPackageDocument`/`isBotPackage`) before anything else is parsed. This repository's `.md` files have never
+  had that key since the section 1 rename (`format`/`version` replaced it), so they are not recognized as a
+  package at all on that path — `isBotPackage()` returns false and the import route falls through to
+  `parseTeamManifest()` instead, which also fails (different format string again).
+- Even with `botmrr: 1` restored, that Markdown path only ever parses as package **v1**, which has no
+  `connections` field and a flat `chiefOfStaff` instead of a `team` object at all — so a package distributed as
+  Markdown can never carry ADLC's `qaci-data` MCP connection or a `team.brief`, regardless of any format string.
+
+The real app's actual JSON-object import path (`parsePackageDocument` given a parsed object, used by
+`server/team-market.ts`'s `/api/market` — i.e. exactly how `docs/playbooks/qaciduo-*.json` are served in
+production) expects a **nested** envelope, `{format: "openmaus.package", version: 2, package: {...fields...}}` —
+structurally different from this repository's own flat `{format: "qaci-duo.package", version: 2, id, release,
+...}` frontmatter. `scripts/lib.mjs` now exports `workerRealPackage(markdown, playbooksByName)`, which builds
+the identical package fields (factored out of `workerPackage()` into a shared `packageFields()`) and wraps them
+in that real nested shape with the real, unrenamed `openmaus.package`/`2` — deliberately **not** this
+repository's own renamed `PACKAGE_FORMAT`, since the whole point of this file is to import into the real app as
+it exists today. `scripts/build.mjs` now also writes `packages/<id>.json` for every worker.
+
+Confirmed against the real server (not just the real zod schema in isolation): importing
+`dist/packages/adlc.json` and `dist/packages/craft.json`, freshly built by this repository's own pipeline, both
+returned `201` from `/api/teams/import`, created all five agents (the real four plus this repository's
+nameless wrapper — see section 5) with their real souls intact, the real shared room, and ADLC's real `qaci-data`
+connection offered correctly. Sending PM a message round-tripped through a real chat turn (the fixture's fake
+engine, not a real model, so this confirms the plumbing — import, bot creation, soul loading, message routing,
+turn completion — works, not reasoning quality).
+
+## 7. Verification
 
 - `npm ci --ignore-scripts` then `npm test` → 4 Digital Workers, 12 playbooks valid, all unit tests pass (including
   two new ones for the multi-agent/rooms/routines extension).
@@ -190,3 +225,7 @@ used that way).
   and `/workers/craft` statically generated; `site:start` + curl confirmed both pages render with the real
   content (checked via `validateWorker`/`workerPackage`/`validatePackage` programmatically before writing the
   files, not just by eyeballing them).
+- After adding `workerRealPackage()`/`packages/<id>.json` (section 6): `npm test` still 22/22, `npm run build`
+  writes `packages/adlc.json` and `packages/craft.json` alongside the `.md` files; both re-parsed successfully
+  with the real `parsePackageDocument()` (imported directly from `qaci-duo`'s `shared/package-format.ts`) and
+  both imported with `201` against a real, isolated `control-omb.ts launch` fixture — see section 6 for details.
