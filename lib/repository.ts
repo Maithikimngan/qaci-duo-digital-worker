@@ -28,9 +28,25 @@ export type DuoColor =
  * schema/package.schema.json. Ported from openmausbot-teams' `BotPackage` (lib/packages.ts); the format
  * discriminator and the `routines[].runOn` value were renamed, see PORTING_NOTES.md.
  */
+export interface WorkerConnection {
+  key: string;
+  label: string;
+  reason: string;
+  mcp: { transport: "http" | "sse"; url: string; valueNames: string[] };
+}
+
+export interface WorkerSkill {
+  name: string;
+  description: string;
+  source?: string;
+  license?: string;
+  compatibility?: string;
+  instructions: string;
+}
+
 export interface WorkerPackage {
   format: "qaci-duo.package";
-  version: 1;
+  version: 2;
   id: string;
   release: string;
   name: string;
@@ -48,15 +64,19 @@ export interface WorkerPackage {
     capabilities: string[];
     platforms?: string[];
   };
+  team: { name: string; leader?: string; brief?: string };
   agents: Array<{
     key: string;
     name: string;
     title: string;
     description: string;
     appearance: { color: DuoColor };
+    soul?: string;
     playbooks?: string[];
+    skills?: string[];
+    connections?: string[];
   }>;
-  chiefOfStaff?: string;
+  connections?: WorkerConnection[];
   rooms?: Array<{
     key: string;
     name: string;
@@ -75,6 +95,7 @@ export interface WorkerPackage {
     enabledAfterInstall: false;
   }>;
   playbooks?: Array<{ key: string; name: string; summary: string; triggers: string[]; instructions: string }>;
+  skills?: { version: 1; entries: WorkerSkill[] };
   /**
    * Ported for structural parity with openmausbot-teams' public revenue-claim field (lib/proof.ts /
    * lib/research.ts there). No QACI Duo Digital Worker carries a revenue claim, so this is always absent
