@@ -132,13 +132,43 @@ Duo's own real official playbooks (`qaciduo-adlc`, `qaciduo-app-rebuild`) actual
   (key/name/summary/triggers/instructions only). The real `qaciduo-adlc` package uses only `skills[]`, no
   `playbooks[]` at all, so a worker can now use `skills` alone, `playbooks` alone, or both; it needs at least one.
 
-This did **not** yet include writing `workers/adlc.md` / `workers/craft.md` themselves — that depends on reading
-ADLC/Craft's real source in `qaci-duo` (`server/adlc-playbook.ts`, `server/app-rebuild-playbook.ts`,
-`docs/playbooks/*.json`), which was not reachable from the branch/commit checked out there at the time; see the
-plan this work came from for the follow-up. The four research-workflow sample workers and their twelve playbooks
-were deleted in the same pass, by request, so `workers/` and `playbooks/` are empty until that follow-up lands.
+## 5. Later addition: `workers/adlc.md` and `workers/craft.md` from the real source
 
-## 5. Verification
+A further commit wrote the two workers this was all leading up to, reading the real, already-built
+`docs/playbooks/qaciduo-adlc.json` (release 4.0.2) and `qaciduo-app-rebuild.json` (release 1.1.1) found
+uncommitted in the `qaci-duo-team-switcher` worktree (`features/dw-team-switcher`) — not the `qaci_duo_v2/qaci-duo`
+checkout used for the rest of this branch, which had changed to a branch (`features/dw-update`) that doesn't have
+these files at all.
+
+Both workers carry their agents' **real `soul` text verbatim** (ADLC: `pm`/`lead`/`engineer`/`deployer`; App
+Rebuild: `analyst`/`engineer`/`checker`/`deployer`), including the `{{agent:<key>}}`/`{{team}}` placeholders the
+real app's runtime resolves — which is exactly why every one of those four agents keeps its real key (`pm`, not
+something renamed): a soul's self-reference like `Bạn là **{{agent:pm}}**` only resolves correctly if an agent
+keyed `pm` actually exists in the package. ADLC's `qaci-data` MCP connection (a real, live
+`casanos-connector-prod.ptatien.com` URL, held only by `pm`, not any other agent) and all 20 real skills
+(12 `adlc-*` + `deploy-github`/`deploy-railway`, shared byte-for-byte between both workers, + 6 `rebuild-*` for
+App Rebuild) came across the same way, as `playbooks/<name>/SKILL.md` files carried via `skills:`, not `playbooks:`
+(matching the real packages, which use `skills[]` only).
+
+One necessary compromise: this repository's worker format always makes the worker's own top-level identity
+(`id`/`name`/`title`/`description`/`color`) one of the generated package's agents — there is no way to opt out of
+that. Since the real ADLC/App Rebuild packages have no such "generic installed identity" (their Chief of Staff,
+`pm`/`analyst`, already uses the file's own slug conceptually), `workers/adlc.md`/`workers/craft.md` end up with
+**one extra agent beyond the real four** — a nameless "QACI Duo ADLC"/"QACI Duo App Rebuild" wrapper that is
+`chiefOfStaff`-overridden away from being the lead and deliberately left out of the shared room's `members`, so it
+has no real function. The alternative (reusing the worker's own identity *as* `pm`/`analyst` by renaming that
+agent's key to `adlc`/`craft`) was rejected: it would break every `{{agent:pm}}`/`{{agent:analyst}}` self-reference
+baked into that agent's own real soul text. Flagging this for the repository owner in case a cleaner resolution
+(e.g. letting a worker's top-level identity be purely nominal, with no forced agent of its own, when it declares
+`agents`) is wanted later — that would be a further schema change, not done here.
+
+A small, unrelated fix landed alongside this: `validatePlaybook()` no longer caps a playbook *file's* body at
+24,000 characters — `adlc-paper-prototype`'s real skill is ~26 KB, which is fine as an embedded `skills:` entry
+(capped at 256 KB) but was being rejected by a check that only makes sense for the lightweight `playbooks:` shape
+(which still enforces its own real 24,000-character cap, in `validatePackage`, at the point a playbook is actually
+used that way).
+
+## 6. Verification
 
 - `npm ci --ignore-scripts` then `npm test` → 4 Digital Workers, 12 playbooks valid, all unit tests pass (including
   two new ones for the multi-agent/rooms/routines extension).
@@ -154,3 +184,9 @@ were deleted in the same pass, by request, so `workers/` and `playbooks/` are em
   the only thing CI runs; it was not extended to also run `npm run site:build` — that was run manually for this
   verification, not wired into CI, so adding it (and any Next.js-specific CI concerns, like build caching) is left
   for the repository owner to decide.
+- Re-run after dropping the four sample workers and adding `workers/adlc.md`/`workers/craft.md`: `npm test` → 2
+  Digital Workers, 20 playbooks valid (67 files scanned for secrets, none found in the real Vietnamese soul/skill
+  text carried over). `npm run build`, `npm run typecheck` and `npm run site:build` all pass with `/workers/adlc`
+  and `/workers/craft` statically generated; `site:start` + curl confirmed both pages render with the real
+  content (checked via `validateWorker`/`workerPackage`/`validatePackage` programmatically before writing the
+  files, not just by eyeballing them).

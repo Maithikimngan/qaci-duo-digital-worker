@@ -13,14 +13,19 @@ workers/<id>.md ───────────┴─► pull request ─► C
 
 ## Available today
 
-This repository is being repointed to hold QACI Duo's own official Digital Workers (starting with `adlc` and
-`craft`, QACI Duo's ADLC and App Rebuild teams) rather than the research-workflow sample workers it shipped with
-earlier — `workers/` and `playbooks/` are empty right now while that content is written against the schema below.
+This repository now holds QACI Duo's own official Digital Workers, ported from `qaci-duo`'s real
+`docs/playbooks/*.json` rather than the research-workflow sample workers it shipped with earlier.
 
-A Digital Worker can be a single bot or carry a whole small team: more than one `agents[]` entry, a shared room, a
-standing `soul` per agent, declared MCP `connections`, and whole embedded `skills` as well as lightweight
-`playbooks`. See [FORMAT.md](FORMAT.md) for the full field reference and
-[`templates/worker.md`](templates/worker.md) for a commented example.
+| Digital Worker | Role | Agents | Skills |
+|---|---|---|---|
+| **ADLC** (`workers/adlc.md`) | Four-agent software team: PM, Tech Lead, Engineer, Deployer | `pm`, `lead`, `engineer`, `deployer` | 14 `adlc-*`/`deploy-*` skills |
+| **App Rebuild** (`workers/craft.md`, "Craft Anything") | Clean-room rebuild team: Analyst, Engineer, Checker, Deployer | `analyst`, `engineer`, `checker`, `deployer` | 8 `rebuild-*`/`deploy-*` skills |
+
+Each carries its real production `soul` per agent (the actual standing system prompt from `qaci-duo`), and ADLC
+declares a real MCP connection (`qaci-data`, held only by `pm`). A Digital Worker can be a single bot or carry a
+whole small team: more than one `agents[]` entry, a shared room, a standing `soul` per agent, declared MCP
+`connections`, and whole embedded `skills` as well as lightweight `playbooks`. See [FORMAT.md](FORMAT.md) for the
+full field reference and [`templates/worker.md`](templates/worker.md) for a commented example.
 
 Every playbook follows the same shape — *When to use*, *Inputs*, *Procedure* with a check per step, *Output* template,
 *Quality checklist*, *Guardrails* and an *Example* — so a worker knows what to ask, what to do and what to hand back.

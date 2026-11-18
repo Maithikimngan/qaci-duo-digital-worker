@@ -337,7 +337,9 @@ export function validatePlaybook(raw, folder) {
   if (!text(field("author"), 100)) fail("author is required");
   const body = front.body.trim();
   if (body.length < 100) fail("the body must describe the procedure (at least 100 characters)");
-  if (body.length > PLAYBOOK_BODY_MAX) fail(`the body allows at most ${PLAYBOOK_BODY_MAX} characters`);
+  // No per-file body cap here: a file this size is a valid SKILL.md either way (checked above, 256 KB). A worker
+  // that carries it as a lightweight `playbooks:` entry is capped at PLAYBOOK_BODY_MAX there instead (validatePackage),
+  // since that limit is specific to the real app's package.playbooks[].instructions field, not to `skills:` entries.
   // QACI Duo shows these to the reviewer as warnings; here they block the merge.
   if (/[A-Za-z0-9+/]{120,}={0,2}/.test(raw)) fail("contains a long base64-like string, a common way to hide instructions");
   if (/\b(curl|wget)\b[^\n]{0,200}\|\s*(ba|z|da)?sh\b/.test(raw)) fail("pipes a download straight into a shell (curl | sh)");
