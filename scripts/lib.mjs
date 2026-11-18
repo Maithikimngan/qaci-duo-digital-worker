@@ -607,8 +607,15 @@ function packageFields(worker, playbooksByName) {
     ...(extra?.soul ? { soul: extra.soul } : {}),
     ...(connectionKeys?.length ? { connections: connectionKeys } : {}),
   });
+  // A worker whose own top-level fields are not the team's lead — it names a real teammate as chiefOfStaff
+  // instead — doesn't need a bot of its own: id/name/title/description/color stay package metadata only (the
+  // Templates card), and the real agents are exactly the ones it declares. Without this, every multi-agent
+  // worker would always carry one extra, soul-less, roomless bot that does nothing but duplicate the package's
+  // own name — which is exactly what showed up as an unexplained 5th "team member" once this was actually
+  // installed. A worker with no `agents` (the common single-bot case) is unaffected: it is always its own agent.
+  const ownFieldsAreTheLead = extraAgents.length === 0 || worker.chiefOfStaff === undefined || worker.chiefOfStaff === worker.id;
   const agents = [
-    agent(worker.id, worker.name, worker.title, worker.description, worker.color, worker),
+    ...(ownFieldsAreTheLead ? [agent(worker.id, worker.name, worker.title, worker.description, worker.color, worker)] : []),
     ...extraAgents.map((extra) => agent(extra.key, extra.name, extra.title, extra.description, extra.color, extra, extra.connections)),
   ];
   const chiefOfStaff = worker.chiefOfStaff ?? worker.id;
@@ -750,8 +757,11 @@ export function workerLibraryFiles(markdown, playbooksByName) {
   const id = worker.id;
   const carried = [...new Set([...(worker.playbooks ?? []), ...(worker.skills ?? [])])].map((name) => playbooksByName.get(name));
   const extraAgents = worker.agents ?? [];
+  // Mirrors packageFields()'s own rule: a worker that names a real teammate as chiefOfStaff isn't a member of its
+  // own team — its id/name/etc. stay metadata only, not a 5th bot alongside the ones it actually declared.
+  const ownFieldsAreTheLead = extraAgents.length === 0 || worker.chiefOfStaff === undefined || worker.chiefOfStaff === id;
   const members = [
-    { key: id, name: worker.name, title: worker.title, description: worker.description, appearance: { color: worker.color } },
+    ...(ownFieldsAreTheLead ? [{ key: id, name: worker.name, title: worker.title, description: worker.description, appearance: { color: worker.color } }] : []),
     ...extraAgents.map((agent) => ({ key: agent.key, name: agent.name, title: agent.title, description: agent.description, appearance: { color: agent.color } })),
   ];
   const chiefOfStaff = worker.chiefOfStaff ?? id;

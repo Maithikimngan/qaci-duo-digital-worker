@@ -366,3 +366,21 @@ test("workerRealPackage wraps the same fields in the real app's own nested shape
   assert.equal(real.package.name, own.name);
   assert.deepEqual(real.package.team, own.team);
 });
+
+test("a worker that names a real teammate as chiefOfStaff is not itself one of the agents", () => {
+  const led = worker.replace(
+    "license: MIT\n",
+    "license: MIT\nagents:\n  - key: lead-agent\n    name: Lead Agent\n    title: The real lead\n    description: Actually runs the team.\n    color: cyan\nchiefOfStaff: lead-agent\n",
+  );
+  assert.deepEqual(validateWorker(led, "sample-worker", names), []);
+  const generated = workerPackage(led, playbooks);
+  assert.deepEqual(validatePackage(generated, "sample-worker"), []);
+  const { metadata: pkg } = splitPackage(generated);
+  assert.deepEqual(pkg.agents.map((agent) => agent.key), ["lead-agent"], "the worker's own id never becomes a redundant agent once a real teammate leads");
+  assert.equal(pkg.team.leader, "lead-agent");
+  assert.equal(pkg.team.name, "Sample Worker", "the worker's own name/tagline stay package metadata either way");
+  const { entry: ledEntry, files } = workerLibraryFiles(led, playbooks);
+  assert.equal(ledEntry.members, 1);
+  const manifest = JSON.parse(new Map(files.map((file) => [file.path, file.content])).get(ledEntry.manifest));
+  assert.deepEqual(manifest.team.members.map((member) => member.key), ["lead-agent"]);
+});

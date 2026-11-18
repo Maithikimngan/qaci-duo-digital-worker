@@ -150,17 +150,15 @@ keyed `pm` actually exists in the package. ADLC's `qaci-data` MCP connection (a 
 App Rebuild) came across the same way, as `playbooks/<name>/SKILL.md` files carried via `skills:`, not `playbooks:`
 (matching the real packages, which use `skills[]` only).
 
-One necessary compromise: this repository's worker format always makes the worker's own top-level identity
-(`id`/`name`/`title`/`description`/`color`) one of the generated package's agents — there is no way to opt out of
-that. Since the real ADLC/App Rebuild packages have no such "generic installed identity" (their Chief of Staff,
-`pm`/`analyst`, already uses the file's own slug conceptually), `workers/adlc.md`/`workers/craft.md` end up with
-**one extra agent beyond the real four** — a nameless "QACI Duo ADLC"/"QACI Duo App Rebuild" wrapper that is
-`chiefOfStaff`-overridden away from being the lead and deliberately left out of the shared room's `members`, so it
-has no real function. The alternative (reusing the worker's own identity *as* `pm`/`analyst` by renaming that
-agent's key to `adlc`/`craft`) was rejected: it would break every `{{agent:pm}}`/`{{agent:analyst}}` self-reference
-baked into that agent's own real soul text. Flagging this for the repository owner in case a cleaner resolution
-(e.g. letting a worker's top-level identity be purely nominal, with no forced agent of its own, when it declares
-`agents`) is wanted later — that would be a further schema change, not done here.
+**Resolved in a later commit** (first flagged here, then actually seen as an unexplained 5th "team member" once
+installed into a real server — see section 6): a worker whose top-level fields are not the team's lead (it names
+a real teammate as `chiefOfStaff` instead) no longer gets a bot of its own. `id`/`name`/`title`/`description`/
+`color` stay package metadata only (the Templates card's name/tagline), and `agents` becomes exactly the real
+agents the file declares — `pm`/`lead`/`engineer`/`deployer` for ADLC, `analyst`/`engineer`/`checker`/`deployer`
+for App Rebuild, matching the real packages' own agent count exactly. A worker with no `agents` at all (the
+common single-bot case) is unaffected: it is always its own agent, as before. The alternative — reusing the
+worker's own identity *as* `pm`/`analyst` by renaming that agent's key to `adlc`/`craft` — is still rejected: it
+would break every `{{agent:pm}}`/`{{agent:analyst}}` self-reference baked into that agent's own real soul text.
 
 A small, unrelated fix landed alongside this: `validatePlaybook()` no longer caps a playbook *file's* body at
 24,000 characters — `adlc-paper-prototype`'s real skill is ~26 KB, which is fine as an embedded `skills:` entry
