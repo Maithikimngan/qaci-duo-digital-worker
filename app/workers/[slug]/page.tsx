@@ -160,11 +160,24 @@ export default async function WorkerPage({ params }: Props) {
 
           <section className="detail-facts" aria-label="Package contents">
             <div><strong>{teamAgents.length}</strong><span>agent{teamAgents.length === 1 ? "" : "s"}</span></div>
-            <div><strong>{entry.rooms?.length ?? 0}</strong><span>shared rooms</span></div>
-            <div><strong>{entry.playbooks?.length ?? 0}</strong><span>playbooks</span></div>
-            <div><strong>{entry.skills?.entries.length ?? 0}</strong><span>skills</span></div>
-            <div><strong>{entry.connections?.length ?? 0}</strong><span>connections</span></div>
-            <div><strong>{entry.routines?.length ?? 0}</strong><span>paused routines</span></div>
+            {(entry.rooms?.length ?? 0) > 0 && (
+              <div><strong>{entry.rooms!.length}</strong><span>shared room{entry.rooms!.length === 1 ? "" : "s"}</span></div>
+            )}
+            {(entry.playbooks?.length ?? 0) > 0 && (
+              <div><strong>{entry.playbooks!.length}</strong><span>playbook{entry.playbooks!.length === 1 ? "" : "s"}</span></div>
+            )}
+            {(entry.skills?.entries.length ?? 0) > 0 && (
+              <div><strong>{entry.skills!.entries.length}</strong><span>skill{entry.skills!.entries.length === 1 ? "" : "s"}</span></div>
+            )}
+            {(entry.connections?.length ?? 0) > 0 && (
+              <div>
+                <strong>{entry.connections!.map((connection) => connection.label).join(", ")}</strong>
+                <span>connection{entry.connections!.length === 1 ? "" : "s"} (MCP)</span>
+              </div>
+            )}
+            {(entry.routines?.length ?? 0) > 0 && (
+              <div><strong>{entry.routines!.length}</strong><span>paused routine{entry.routines!.length === 1 ? "" : "s"}</span></div>
+            )}
           </section>
 
           {entry.proof && (

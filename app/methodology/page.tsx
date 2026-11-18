@@ -11,10 +11,11 @@ export const metadata: Metadata = {
 };
 
 const principles = [
-  ["01", "One capability per file", "A playbook is a standard SKILL.md — one procedure that produces a result. A Digital Worker (workers/<id>.md) is a role that carries several playbooks. Any playbook can be added to any worker."],
-  ["02", "CI checks it before a human does", "node scripts/validate.mjs rejects an unknown field, a missing section, a secret-shaped string, and common ways to hide instructions (long base64-like runs, curl | sh, invisible Unicode) — before a reviewer ever reads it."],
-  ["03", "A code owner reads the content", "Is each step specific enough to repeat? Does the playbook ask for its inputs before guessing? Does evidence stay separate from inference? Do sending, submitting, deleting and costly actions wait for approval?"],
-  ["04", "Published automatically, nothing by hand", "Merging to main regenerates the library branch within about a minute. QACI Duo reads only that generated branch through a read-only GitHub API token — main itself is never read directly."],
+  ["01", "One capability per file, two ways to carry it", "playbooks/<name>/SKILL.md is one procedure. A worker (workers/<id>.md) carries it as a lightweight playbook (trigger + instructions) or embeds the whole file as a real skill — either way, the same file can be shared across workers."],
+  ["02", "A worker can be a small team, not just one bot", "Optionally more than one agent, each with its own standing soul, a shared room to coordinate in, and declared MCP connections — a slot and a reason, never a credential, and only handed to the specific agent that needs it."],
+  ["03", "CI checks it before a human does", "node scripts/validate.mjs rejects an unknown field, a missing section, a secret-shaped string, and common ways to hide instructions (long base64-like runs, curl | sh, invisible Unicode) — before a reviewer ever reads it."],
+  ["04", "A code owner reads the content", "Is each step specific enough to repeat? Does the worker ask for its inputs before guessing? Does evidence stay separate from inference? Do sending, submitting, deleting and costly actions wait for approval?"],
+  ["05", "Published automatically, nothing by hand", "Merging to main regenerates the library branch within about a minute. QACI Duo reads only that generated branch through a read-only GitHub API token — main itself is never read directly."],
 ];
 
 export default function MethodologyPage() {
@@ -23,7 +24,7 @@ export default function MethodologyPage() {
       <section className="methodology-hero simple-page-hero">
         <p className="overline">HOW QACI DUO PLAYBOOKS WORK</p>
         <h1>From pull request to Digital Worker.</h1>
-        <p>Every worker and playbook in this library went through the same four steps — nothing is added by hand.</p>
+        <p>Every worker and playbook in this library went through the same review pipeline — nothing is added by hand.</p>
         <div className="detail-actions"><Link href="/" className="button button-primary">Browse workers</Link><Link href="/publish" className="button button-secondary">Contribute one</Link></div>
       </section>
 
@@ -50,7 +51,7 @@ playbooks/<name>/SKILL.md
       <section className="never-package">
         <span className="section-kicker">WHAT CI REFUSES</span><h2>A submission is instructions — never access.</h2>
         <div><span>Tokens or passwords</span><span>Credential-shaped fields</span><span>Binaries or extra files</span><span>curl | sh</span><span>Invisible Unicode</span><span>Long base64 runs</span></div>
-        <p className="boundary-note">QACI Duo treats every imported file as untrusted: it reads the description and the procedure only, grants no permissions, and connects no apps. A routine always installs paused — its owner switches it on.</p>
+        <p className="boundary-note">QACI Duo treats every imported file as untrusted: it reads the description, the soul and the procedure only, and grants no permissions on its own. A declared MCP connection is an address and the names of the values an installer will later supply — never a value itself — and nothing is actually connected until the installer connects it. A routine always installs paused — its owner switches it on.</p>
       </section>
     </main>
   );

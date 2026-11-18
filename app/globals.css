@@ -321,11 +321,9 @@ img { display: block; max-width: 100%; }
 .member-capabilities { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .member-capabilities-label { color: var(--muted-light); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 2px; }
 .tag-chip { height: 22px; padding: 0 8px; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); background: var(--surface); font-size: 10px; white-space: nowrap; }
-.detail-facts { margin-top: 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-.detail-facts div { min-height: 74px; padding: 14px; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.detail-facts div:nth-child(3n) { border-right: 0; }
-.detail-facts div:nth-last-child(-n+3) { border-bottom: 0; }
-.detail-facts strong { font-size: 20px; font-weight: 620; }
+.detail-facts { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 10px; }
+.detail-facts div { min-height: 74px; min-width: 110px; flex: 1 1 110px; padding: 14px; display: flex; flex-direction: column; justify-content: center; border: 1px solid var(--line); border-radius: 12px; }
+.detail-facts strong { font-size: 20px; font-weight: 620; overflow-wrap: anywhere; }
 .detail-facts span { margin-top: 4px; color: var(--muted); font-size: 10px; }
 .detail-proof { margin-top: 24px; padding: 17px 18px; display: grid; grid-template-columns: auto auto minmax(0,1fr); gap: 13px; align-items: center; border: 1px solid var(--proof-border); border-radius: 13px; background: var(--sand-wash); }
 .detail-proof > span { color: var(--proof-label); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
@@ -432,9 +430,7 @@ img { display: block; max-width: 100%; }
   .detail-title h1 { font-size: 38px; }
   .detail-summary { padding: 17px; }
   .member-grid, .related-grid, .methodology-grid { grid-template-columns: 1fr; }
-  .detail-facts { grid-template-columns: 1fr; }
-  .detail-facts div { min-height: 58px; border-right: 0; border-bottom: 1px solid var(--line); }
-  .detail-facts div:last-child { border-bottom: 0; }
+  .detail-facts div { min-height: 58px; flex: 1 1 100%; }
   .detail-proof { grid-template-columns: 1fr; }
   .template-source-head { align-items: flex-start; flex-direction: column; }
   .package-anatomy { padding: 24px; }

@@ -15,7 +15,7 @@ const repoUrl = "https://github.com/vanhaito/qaci-duo-playbooks";
 
 const steps = [
   ["01", "Get access", "This repository is private. Ask a code owner (see .github/CODEOWNERS) to add you as a collaborator, then create a branch."],
-  ["02", "Write the file(s)", "A new capability is playbooks/<name>/SKILL.md, from templates/playbook/SKILL.md. A new role is workers/<id>.md, from templates/worker.md, listing the playbooks it carries. Follow FORMAT.md exactly — the folder/file name must match the name/id field inside it."],
+  ["02", "Write the file(s)", "A new capability is playbooks/<name>/SKILL.md, from templates/playbook/SKILL.md. A new role is workers/<id>.md, from templates/worker.md, carrying that capability as a playbook or a full embedded skill — optionally with more than one agent, each with its own soul, a shared room, and declared MCP connections. Follow FORMAT.md exactly — the folder/file name must match the name/id field inside it."],
   ["03", "Check it locally, then open a pull request", "npm ci --ignore-scripts, then npm test (and optionally npm run build to see the generated file). Push your branch and open a pull request against main — CI runs the same checks, then a code owner reads the content."],
 ];
 
@@ -25,7 +25,7 @@ export default function PublishPage() {
       <section className="publish-hero simple-page-hero">
         <p className="overline">CONTRIBUTE TO QACI DUO PLAYBOOKS</p>
         <h1>Add a capability, or a role that carries several.</h1>
-        <p>A playbook is one procedure that produces a result. A Digital Worker is a role — it carries several playbooks and knows which one to pick.</p>
+        <p>A playbook is one procedure that produces a result. A Digital Worker is a role — it carries several playbooks or embedded skills (or both) and knows which one to pick, alone or as a small team of agents.</p>
         <div className="detail-actions">
           <a className="button button-primary" href={`${repoUrl}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer">Read CONTRIBUTING.md ↗</a>
           <a className="button button-secondary" href={`${repoUrl}/blob/main/FORMAT.md`} target="_blank" rel="noreferrer">Read the file format ↗</a>
@@ -43,14 +43,16 @@ export default function PublishPage() {
       <section className="package-anatomy">
         <div>
           <span className="section-kicker">A DIGITAL WORKER</span>
-          <h2>One role, several playbooks.</h2>
-          <p>workers/&lt;id&gt;.md lists the playbooks it carries and (optionally) extra teammates, a shared room, and paused routines — see FORMAT.md.</p>
+          <h2>One role, several playbooks or skills.</h2>
+          <p>workers/&lt;id&gt;.md lists the playbooks and/or skills it carries and (optionally) extra teammates — each with its own soul — a shared room, declared MCP connections, and paused routines — see FORMAT.md.</p>
         </div>
         <pre><code>{`workers/<id>.md
 ├── name, title, tagline
 ├── outcomes + setupMinutes
 ├── apps (declared, no credentials)
-├── playbooks: [...]
+├── playbooks: [...] and/or skills: [...]
+├── soul (this worker's own standing prompt)
+├── connections: [...] (declared MCP slots)
 ├── agents / rooms / routines (optional)
 └── Mission, Working rules,
     Completion rule`}</code></pre>
@@ -60,7 +62,7 @@ export default function PublishPage() {
         <span className="section-kicker">NEVER INCLUDE</span>
         <h2>A playbook is instructions — not access.</h2>
         <div><span>Credentials</span><span>Tokens or passwords</span><span>Personal data</span><span>Internal links</span><span>Routines enabled by default</span><span>Binaries or extra files</span></div>
-        <p className="boundary-note">Every routine installs paused, and QACI Duo connects no apps on its own — the user connects their own.</p>
+        <p className="boundary-note">Every routine installs paused. A connection is a declared address and the names of the values it needs — never a value itself — and QACI Duo connects no apps on its own; the user connects their own.</p>
       </section>
 
       <p className="simple-page-back"><Link href="/">← Back to all workers</Link></p>
