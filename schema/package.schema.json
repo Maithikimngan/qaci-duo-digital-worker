@@ -119,6 +119,20 @@
         "additionalProperties": true
       }
     },
+    "examples": {
+      "description": "Up to 12 suggested questions, shown on the worker's page.",
+      "type": "array", "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": ["title", "input", "output"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "input": { "type": "string", "minLength": 1, "maxLength": 4000 },
+          "output": { "type": "string", "minLength": 1, "maxLength": 8000 }
+        },
+        "additionalProperties": true
+      }
+    },
     "rooms": {
       "type": "array", "maxItems": 30,
       "items": {

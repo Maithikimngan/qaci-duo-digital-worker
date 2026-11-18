@@ -43,6 +43,10 @@ playbooks:
 #     connections: [your-connection] # subset of connections: above; defaults to NONE (never handed out unless listed)
 # chiefOfStaff: your-worker # one of: this worker's own id, or an agents[].key; defaults to this worker's id
 # teamBrief: Shared instructions for the whole team, under 24,000 bytes (becomes the package's team.brief).
+# examples: # up to 12 suggested questions, shown on the worker's page
+#   - title: A short name for this example (at most 120 characters)
+#     input: A realistic request a user would make (at most 4,000 characters)
+#     output: An outline of the response — headings and kind of content, not a full transcript (at most 8,000 characters)
 # rooms:
 #   - key: your-room
 #     name: Your Room

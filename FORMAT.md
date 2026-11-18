@@ -54,6 +54,7 @@ YAML frontmatter followed by a Markdown body.
 | `soul` | no | This worker's own standing system prompt, under 24,000 bytes. Optional; without it the worker runs on `description` alone, as before |
 | `connections` | no | Up to 20 declared MCP slots, available to be handed to a specific agent (see below): `key`, `label`, `reason`, `mcp: {transport: http\|sse, url, valueNames}`. A slot never carries a secret value — only the address and the names of the header values an installer supplies |
 | `teamBrief` | no | Shared instructions for the whole team, under 24,000 bytes (becomes the generated package's `team.brief`) |
+| `examples` | no | Up to 12 suggested questions, shown on the worker's page: `title` (≤120 chars), `input` (a realistic request, ≤4,000 chars), `output` (an outline of the response, ≤8,000 chars) |
 
 A worker needs at least one `playbooks` or `skills` entry (or both); a playbook folder may be used as either, or both,
 across different workers. The body needs three sections: `## Mission`, `## Working rules` (including which

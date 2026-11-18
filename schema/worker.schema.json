@@ -62,6 +62,20 @@
       "description": "Shared instructions for the whole team, under 24,000 bytes. Becomes the generated package's team.brief.",
       "type": "string", "maxLength": 24000
     },
+    "examples": {
+      "description": "Up to 12 suggested questions, shown on the worker's page.",
+      "type": "array", "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": ["title", "input", "output"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "input": { "type": "string", "minLength": 1, "maxLength": 4000, "description": "A realistic request a user would make." },
+          "output": { "type": "string", "minLength": 1, "maxLength": 8000, "description": "An outline of the response, not a full transcript." }
+        },
+        "additionalProperties": false
+      }
+    },
     "connections": {
       "description": "Up to 20 declared MCP slots a specific agent may be given (see agents[].connections). Never carries a secret value.",
       "type": "array", "maxItems": 20,
