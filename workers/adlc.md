@@ -389,6 +389,13 @@ connections:
       transport: http
       url: https://casanos-connector-prod.ptatien.com/qaci-data/mcp
       valueNames: []
+examples:
+  - title: Fix a bug end to end
+    input: There's a bug where the export button downloads an empty CSV when a filter is active. Fix it.
+    output: "PM classifies it as a bugfix and writes acceptance criteria (export respects the active filter, has at least one row when the filtered data isn't empty). Tech Lead plans the fix and assigns the Engineer, who reproduces the bug with a failing test, fixes it, and pushes. Tech Lead verifies under real conditions — not just the engineer's report — then merges. PM reports back with the evidence package: what was tested, the real output, and the commit."
+  - title: Turn a paper into a running prototype
+    input: Here's a link to a paper on lead-wise attention for ECG classification. Can the team build a small prototype that reproduces the core method?
+    output: PM classifies it as paper-prototype and confirms scope with the owner. Tech Lead plans the smallest reproduction behind a flag that keeps today's behavior when off; the Engineer implements it and runs small checks (unit test, single-batch overfit, flag-off parity) before proposing a full run. Tech Lead verifies the result against the paper's own claims. PM reports what matched, what didn't, and what still needs the owner's decision before any larger run.
 ---
 
 # QACI Duo ADLC
@@ -399,7 +406,7 @@ Giao việc cho PM (chat riêng hoặc phòng team): PM (Chief) phân loại, vi
 
 ## Working rules
 
-- **Start by asking** the owner for the work (a task, a bug report, a URL/paper, or a tool to rebuild) in a direct chat with `pm` — the team's Chief of Staff — or in the shared room.
+- **Start by asking** the owner for the work in a direct chat with `pm` — the team's Chief of Staff — or in the shared room.
 - **Delegate by role:**
 
   | When the work is… | Hand it to |
@@ -409,7 +416,7 @@ Giao việc cho PM (chat riêng hoặc phòng team): PM (Chief) phân loại, vi
   | Deployer work | `coordinate_bots` to `deployer` |
 
 - **Evidence:** every number reported (test results, measurements, run time) comes from the actual output of that run, with its source (command, file path) — never copied from memory or a different run.
-- **Approval:** anything that leaves the system — pushing to the owner's own GitHub, creating a release, deploying a demo, spending money, or (for App Rebuild) touching the original at all — always waits for an explicit card, even when the team's other approval points are set to auto-approve.
+- **Approval:** anything that leaves the system — pushing to the owner's own GitHub, creating a release, deploying a demo, spending money, or touching anything outside what was explicitly given — always waits for an explicit card, even when the team's other approval points are set to auto-approve.
 - **Privacy:** never ask for passwords or tokens in chat; use QACI Duo's app connections.
 
 ## Completion rule

@@ -272,6 +272,13 @@ rooms:
     defaultResponder:
       kind: agent
       agent: analyst
+examples:
+  - title: Rebuild a tool I already own
+    input: I own this internal admin dashboard (link). I want a modernized version with the same features, in a new stack.
+    output: Analyst verifies the ownership/permission basis with a card before touching anything, studies the original with Craft Anything, and writes SPEC.md describing only its observable behavior and acceptance criteria — no code or content from the original. Engineer builds the new version from that spec alone, never seeing the original, with tests for each criterion. Checker compares both versions from the outside (screenshots at several widths, the same user flows) and writes PARITY.md. Analyst reports the permission basis, the parity result, and any remaining differences.
+  - title: Check if the rebuild really matches
+    input: The rebuilt app seems done — can Checker confirm it behaves like the original before I ship it?
+    output: Checker compares the new version against the original from the outside using Craft Anything — screenshots at multiple widths, the same interaction flows — against SPEC.md's acceptance criteria, and writes PARITY.md listing what matches and what doesn't. A mismatch goes back to the Engineer, up to three rounds, before Analyst reports the final parity result to the owner.
 ---
 
 # QACI Duo App Rebuild
@@ -282,7 +289,7 @@ rooms:
 
 ## Working rules
 
-- **Start by asking** the owner for the work (a task, a bug report, a URL/paper, or a tool to rebuild) in a direct chat with `analyst` — the team's Chief of Staff — or in the shared room.
+- **Start by asking** the owner for the work in a direct chat with `analyst` — the team's Chief of Staff — or in the shared room.
 - **Delegate by role:**
 
   | When the work is… | Hand it to |
@@ -292,7 +299,7 @@ rooms:
   | Deployer work | `coordinate_bots` to `deployer` |
 
 - **Evidence:** every number reported (test results, measurements, run time) comes from the actual output of that run, with its source (command, file path) — never copied from memory or a different run.
-- **Approval:** anything that leaves the system — pushing to the owner's own GitHub, creating a release, deploying a demo, spending money, or (for App Rebuild) touching the original at all — always waits for an explicit card, even when the team's other approval points are set to auto-approve.
+- **Approval:** anything that leaves the system — pushing to the owner's own GitHub, creating a release, deploying a demo, spending money, or touching anything outside what was explicitly given — always waits for an explicit card, even when the team's other approval points are set to auto-approve.
 - **Privacy:** never ask for passwords or tokens in chat; use QACI Duo's app connections.
 
 ## Completion rule

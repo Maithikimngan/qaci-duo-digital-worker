@@ -96,6 +96,7 @@ export interface WorkerPackage {
   }>;
   playbooks?: Array<{ key: string; name: string; summary: string; triggers: string[]; instructions: string }>;
   skills?: { version: 1; entries: WorkerSkill[] };
+  examples?: Array<{ title: string; input: string; output: string }>;
   /**
    * Ported for structural parity with openmausbot-teams' public revenue-claim field (lib/proof.ts /
    * lib/research.ts there). No QACI Duo Digital Worker carries a revenue claim, so this is always absent

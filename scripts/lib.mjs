@@ -182,6 +182,15 @@ export function validatePackage(markdown, slug) {
   } else {
     fail("team is required whenever a package has agents");
   }
+  if (pkg.examples !== undefined) {
+    if (!list(pkg.examples, MAX_EXAMPLES)) fail(`examples allows at most ${MAX_EXAMPLES} entries`);
+    for (const [index, example] of (pkg.examples ?? []).entries()) {
+      const at = `examples[${index}]`;
+      if (!text(example?.title, 120)) fail(`${at}.title is required (at most 120 characters)`);
+      if (!text(example?.input, 4_000)) fail(`${at}.input is required (at most 4,000 characters)`);
+      if (!text(example?.output, 8_000)) fail(`${at}.output is required (at most 8,000 characters)`);
+    }
+  }
 
   const playbookKeys = new Set();
   if (pkg.playbooks !== undefined) {
@@ -386,8 +395,9 @@ const WORKER_FIELDS = new Set([
   "agents", "chiefOfStaff", "rooms", "routines",
   // Optional v2 extension: a full standing soul per agent, declared MCP connection slots, and whole embedded skills
   // (as opposed to the lightweight `playbooks` mechanism). All additive; see FORMAT.md.
-  "soul", "connections", "skills", "teamBrief",
+  "soul", "connections", "skills", "teamBrief", "examples",
 ]);
+export const MAX_EXAMPLES = 12;
 
 /** The text under one `## heading` of a Markdown body. */
 export function section(body, heading) {
@@ -475,6 +485,15 @@ export function validateWorker(markdown, slug, playbookNames) {
   }
   if (worker.teamBrief !== undefined && (typeof worker.teamBrief !== "string" || Buffer.byteLength(worker.teamBrief) > TEAM_BRIEF_MAX_BYTES)) {
     fail(`teamBrief must be text under ${TEAM_BRIEF_MAX_BYTES} bytes`);
+  }
+  if (worker.examples !== undefined) {
+    if (!list(worker.examples, MAX_EXAMPLES)) fail(`examples allows at most ${MAX_EXAMPLES} entries`);
+    for (const [index, example] of (Array.isArray(worker.examples) ? worker.examples : []).entries()) {
+      const at = `examples[${index}]`;
+      if (!text(example?.title, 120)) fail(`${at}.title is required (at most 120 characters)`);
+      if (!text(example?.input, 4_000)) fail(`${at}.input is required (a realistic request, at most 4,000 characters)`);
+      if (!text(example?.output, 8_000)) fail(`${at}.output is required (the expected response outline, at most 8,000 characters)`);
+    }
   }
 
   // Optional multi-agent extension. A worker is always the primary agent `worker.id` (name/title/description/color
@@ -619,6 +638,7 @@ export function workerPackage(markdown, playbooksByName) {
       })),
     } : {}),
     ...(skills.length ? { skills: { version: 1, entries: skills.map((playbook) => skillEntry(playbook, worker.id)) } } : {}),
+    ...(worker.examples?.length ? { examples: worker.examples } : {}),
   };
   const teamSection = agents.map((entry) => `- **${entry.name} — ${entry.title}.** ${entry.description}`).join("\n");
   const chiefName = agents.find((entry) => entry.key === chiefOfStaff)?.name ?? worker.name;
@@ -635,6 +655,10 @@ export function workerPackage(markdown, playbooksByName) {
     : [];
   const skillsSection = skills.length
     ? ["", "## Skills", "", ...skills.map((playbook) => `- **${playbook.title}** (\`${playbook.name}\`): ${playbook.description}`)]
+    : [];
+  const examplesSection = worker.examples?.length
+    ? ["", "## Example job", "", ...worker.examples.flatMap((example) =>
+        [`### ${example.title}`, "", "**Ask**", "", example.input, "", "**Expected result**", "", example.output, ""])]
     : [];
   return [
     "---",
@@ -679,6 +703,7 @@ export function workerPackage(markdown, playbooksByName) {
     "",
     ...(playbooks.length ? playbooks.map((playbook) => `- **${playbook.title}** (\`${playbook.name}\`): ${playbook.description}`) : ["None — this worker uses embedded skills only."]),
     ...skillsSection,
+    ...examplesSection,
     "",
     "## Completion rule",
     "",

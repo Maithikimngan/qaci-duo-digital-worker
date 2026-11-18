@@ -191,6 +191,23 @@ export default async function WorkerPage({ params }: Props) {
             </aside>
           )}
 
+          {(entry.examples?.length ?? 0) > 0 && (
+            <section className="detail-section" aria-labelledby="examples-heading">
+              <h2 id="examples-heading">Suggested questions</h2>
+              <div className="example-list">
+                {entry.examples!.map((example) => (
+                  <details className="example-card" key={example.title}>
+                    <summary>{example.title}</summary>
+                    <div className="example-card-body">
+                      <p className="example-ask"><span>Ask</span>{example.input}</p>
+                      <p className="example-result"><span>Expected result</span>{example.output}</p>
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )}
+
           <details className="template-source">
             <summary>View the complete Markdown playbook</summary>
             <div className="template-source-head">

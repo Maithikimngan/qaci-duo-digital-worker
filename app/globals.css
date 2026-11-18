@@ -330,6 +330,15 @@ img { display: block; max-width: 100%; }
 .detail-proof > strong { font-size: 19px; }
 .detail-proof p { margin: 0; color: var(--proof-copy); font-size: 10px; line-height: 1.5; }
 .detail-proof a { color: var(--proof-link); font-weight: 620; }
+.example-list { display: flex; flex-direction: column; gap: 8px; }
+.example-card { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+.example-card summary { padding: 12px 14px; font-size: 12.5px; font-weight: 560; cursor: pointer; list-style: none; }
+.example-card summary::-webkit-details-marker { display: none; }
+.example-card:hover summary { color: var(--ink); }
+.example-card-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+.example-card-body p { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.6; }
+.example-card-body p > span { display: block; margin-bottom: 3px; color: var(--muted-light); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+.example-ask { color: var(--ink); }
 .template-source { margin-top: 26px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .template-source summary { padding: 15px 17px; cursor: pointer; font-size: 12px; font-weight: 600; }
 .template-source[open] summary { border-bottom: 1px solid var(--line); }
