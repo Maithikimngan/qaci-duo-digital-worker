@@ -37,6 +37,14 @@ export default async function WorkerPage({ params }: Props) {
     .sort((a, b) => Number(b.category === entry.category) - Number(a.category === entry.category))
     .slice(0, 3);
 
+  // A multi-agent worker's own top-level entry (key === entry.id) exists only because the package format requires
+  // the worker to be one of its own agents; when it isn't the team's actual lead, it carries no soul and does
+  // nothing — showing it as a "team member" next to the real teammates (and duplicating the page's own title) is
+  // confusing, so it's left out of "Meet the team" and out of the agent count.
+  const teamAgents = entry.agents.length > 1 && entry.team?.leader !== entry.id
+    ? entry.agents.filter((agent) => agent.key !== entry.id)
+    : entry.agents;
+
   return (
     <main className="detail-page">
       <article className="detail-wrap">
@@ -60,7 +68,7 @@ export default async function WorkerPage({ params }: Props) {
             </div>
             <div className="detail-install">
               <InstallButton markdown={markdown} />
-              <span>{entry.agents.length} agent{entry.agents.length === 1 ? "" : "s"} · about {entry.setupMinutes} min setup</span>
+              <span>{teamAgents.length} agent{teamAgents.length === 1 ? "" : "s"} · about {entry.setupMinutes} min setup</span>
             </div>
           </div>
 
@@ -97,7 +105,7 @@ export default async function WorkerPage({ params }: Props) {
           <section className="detail-section" aria-labelledby="team-heading">
             <h2 id="team-heading">Meet the team</h2>
             <div className="member-grid">
-              {entry.agents.map((agent) => {
+              {teamAgents.map((agent) => {
                 const skillEntries = (agent.skills ?? [])
                   .map((name) => entry.skills?.entries.find((skill) => skill.name === name))
                   .filter((skill): skill is NonNullable<typeof skill> => Boolean(skill));
@@ -109,7 +117,7 @@ export default async function WorkerPage({ params }: Props) {
                   .filter((connection): connection is NonNullable<typeof connection> => Boolean(connection));
                 const isLeader = entry.team?.leader === agent.key;
                 return (
-                  <details className="member-card" key={agent.key} open={entry.agents.length <= 1}>
+                  <details className="member-card" key={agent.key} open={teamAgents.length <= 1}>
                     <summary>
                       <DuoAvatar color={agent.appearance.color} expression="happy" size={42} />
                       <div>
@@ -151,7 +159,7 @@ export default async function WorkerPage({ params }: Props) {
           </section>
 
           <section className="detail-facts" aria-label="Package contents">
-            <div><strong>{entry.agents.length}</strong><span>agent{entry.agents.length === 1 ? "" : "s"}</span></div>
+            <div><strong>{teamAgents.length}</strong><span>agent{teamAgents.length === 1 ? "" : "s"}</span></div>
             <div><strong>{entry.rooms?.length ?? 0}</strong><span>shared rooms</span></div>
             <div><strong>{entry.playbooks?.length ?? 0}</strong><span>playbooks</span></div>
             <div><strong>{entry.skills?.entries.length ?? 0}</strong><span>skills</span></div>
