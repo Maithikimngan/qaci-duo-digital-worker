@@ -29,7 +29,8 @@ for (const worker of workers) {
   const { entry, files } = workerLibraryFiles(worker.markdown, playbooks);
   entries.push(entry);
   for (const file of files) write(file.path, file.content);
-  for (const name of splitPackage(worker.markdown).metadata.playbooks) usedBy.set(name, [...(usedBy.get(name) ?? []), entry.name]);
+  const { playbooks: carriesPlaybooks, skills: carriesSkills } = splitPackage(worker.markdown).metadata;
+  for (const name of [...(carriesPlaybooks ?? []), ...(carriesSkills ?? [])]) usedBy.set(name, [...(usedBy.get(name) ?? []), entry.name]);
 }
 for (const playbook of playbooks.values()) write(`playbooks/${playbook.name}/SKILL.md`, playbook.raw);
 const catalog = buildCatalog(entries);

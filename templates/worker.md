@@ -20,16 +20,29 @@ outcomes:
 setupMinutes: 5
 playbooks:
   - your-playbook # folder names under playbooks/
-# Optional: a worker can carry more than one agent, a shared room, and paused routines. See FORMAT.md and
-# schema/worker.schema.json. A worker with none of the fields below is unchanged — this is purely additive.
+# Optional: a worker can carry more than one agent, a shared room, paused routines, a standing soul, declared MCP
+# connections, and whole embedded skills (not just lightweight playbooks). See FORMAT.md and schema/worker.schema.json.
+# A worker with none of the fields below behaves exactly as above — this is purely additive.
+# soul: Standing system prompt for this worker's own agent (your-worker), under 24,000 bytes.
+# skills:
+#   - your-skill # folder names under playbooks/, embedded whole (as SKILL.md) instead of trigger+instructions
+# connections:
+#   - key: your-connection
+#     label: Your Connection
+#     reason: Why an agent would use it.
+#     mcp: { transport: http, url: "https://example.com/mcp", valueNames: [Authorization] } # a declared slot only, never a secret value
 # agents:
 #   - key: your-worker-assistant
 #     name: Your Worker's Assistant
 #     title: A second role on this worker
 #     description: What this extra agent does.
 #     color: blue
+#     soul: Standing system prompt for this one agent, under 24,000 bytes.
 #     playbooks: [your-playbook] # subset of playbooks: above; defaults to all of them
+#     skills: [your-skill] # subset of skills: above; defaults to all of them
+#     connections: [your-connection] # subset of connections: above; defaults to NONE (never handed out unless listed)
 # chiefOfStaff: your-worker # one of: this worker's own id, or an agents[].key; defaults to this worker's id
+# teamBrief: Shared instructions for the whole team, under 24,000 bytes (becomes the package's team.brief).
 # rooms:
 #   - key: your-room
 #     name: Your Room

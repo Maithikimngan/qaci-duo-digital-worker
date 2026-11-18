@@ -1,9 +1,12 @@
 // Shared rules for QACI Duo Digital Workers and playbooks: parse, validate, scan for secrets and build the library.
-// A playbook is one SKILL.md (one capability); a Digital Worker (workers/<id>.md) is one bot that carries playbooks.
+// A playbook is one SKILL.md (one capability); a Digital Worker (workers/<id>.md) is one bot that carries playbooks
+// and, optionally, full embedded skills, MCP connection slots, and per-agent souls (standing system prompts).
 // The checks follow QACI Duo's own parsers (shared/skill-md.ts, shared/package-format.ts). The validation approach —
 // and the "qaci-duo.package" / "qaci-duo.team" / "qaci-duo.catalog" package format this file reads and writes — is
 // adapted from the openmausbot-teams project (https://github.com/milind-soni/openmausbot-teams, MIT), whose own
 // discriminator strings ("botmrr", "openmaus.team", "openmaus.catalog") were renamed here; see PORTING_NOTES.md.
+// The package shape (team{name,leader,brief}, connections[], skills.entries[], agent.soul) matches QACI Duo's own
+// package v2 schema (shared/package-format.ts's packageDocumentSchema), not just the lighter v1 shape.
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 
 export const REQUIRED_SECTIONS = ["Activation", "Mission", "Outcomes", "Connections", "Team", "Chief of Staff", "Completion rule"];
@@ -11,11 +14,17 @@ export const COLORS = new Set(["green", "blue", "red", "orange", "purple", "cyan
 export const MAX_PACKAGE_BYTES = 1_000_000; // QACI Duo refuses larger playbook files
 export const MAX_CATALOG_BYTES = 256_000;
 export const PACKAGE_FORMAT = "qaci-duo.package"; // was "botmrr" (bare `botmrr: 1` key) in openmausbot-teams
+export const PACKAGE_VERSION = 2; // QACI Duo package v2: team{name,leader,brief}, connections[], skills.entries[]
 export const TEAM_FORMAT = "qaci-duo.team"; // was "openmaus.team"
 export const CATALOG_FORMAT = "qaci-duo.catalog"; // was "openmaus.catalog"
 export const ROUTINE_RUNTIMES = new Set(["duo", "cloud"]); // was ["maus", "cloud"]
+export const SOUL_MAX_BYTES = 24_000; // a standing system prompt's limit, same cap QACI Duo itself uses
+export const TEAM_BRIEF_MAX_BYTES = 24_000;
+export const MAX_CONNECTIONS = 20;
+export const MAX_CONNECTION_VALUE_NAMES = 32;
 const KEY = /^[a-z0-9][a-z0-9_-]*$/;
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
+const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,128}$/;
 const CREDENTIAL_FIELD = /^(token|access[_-]?token|password|passwd|secret|client[_-]?secret|api[_-]?key|credentials?|private[_-]?key)$/i;
 
 const text = (value, max) => typeof value === "string" && value.trim().length > 0 && value.trim().length <= max;
@@ -47,6 +56,25 @@ function credentialFields(value, path, out) {
   return out;
 }
 
+/** Every reason an MCP connection slot would be unsafe or invalid; a slot never carries a secret value, only the
+ * address and the names of the header values the installer will supply. */
+function validateConnection(connection, at, fail) {
+  if (!text(connection?.key, 64) || !KEY.test(connection.key)) fail(`${at}.key is invalid`);
+  if (!text(connection?.label, 100)) fail(`${at}.label is required`);
+  if (!text(connection?.reason, 240)) fail(`${at}.reason is required`);
+  const mcp = connection?.mcp;
+  if (!mcp || !["http", "sse"].includes(mcp.transport)) fail(`${at}.mcp.transport must be http or sse`);
+  if (!text(mcp?.url, 2_000) || !/^https:\/\/\S+$/.test(mcp.url) || mcp.url.includes("@")) {
+    fail(`${at}.mcp.url must be an https address with no embedded credentials`);
+  }
+  const names = mcp?.valueNames;
+  if (!list(names ?? [], MAX_CONNECTION_VALUE_NAMES) || (names ?? []).some((name) => !HEADER_NAME.test(name))) {
+    fail(`${at}.mcp.valueNames must be at most ${MAX_CONNECTION_VALUE_NAMES} valid header names`);
+  } else if (new Set((names ?? []).map((name) => name.toLowerCase())).size !== (names ?? []).length) {
+    fail(`${at}.mcp.valueNames must not repeat a header`);
+  }
+}
+
 /** Every reason a playbook file would not install safely in QACI Duo; empty when it is fine. */
 export function validatePackage(markdown, slug) {
   const errors = [];
@@ -60,7 +88,9 @@ export function validatePackage(markdown, slug) {
   } catch (error) {
     return [...errors, error.message];
   }
-  if (pkg.format !== PACKAGE_FORMAT || pkg.version !== 1) fail(`\`format: ${PACKAGE_FORMAT}\` and \`version: 1\` are required (QACI Duo package v1)`);
+  if (pkg.format !== PACKAGE_FORMAT || pkg.version !== PACKAGE_VERSION) {
+    fail(`\`format: ${PACKAGE_FORMAT}\` and \`version: ${PACKAGE_VERSION}\` are required (QACI Duo package v${PACKAGE_VERSION})`);
+  }
   for (const heading of REQUIRED_SECTIONS) {
     if (!new RegExp(`^## ${heading.replace(/ /g, "\\s+")}\\s*$`, "m").test(body)) fail(`the body is missing the \`## ${heading}\` section`);
   }
@@ -93,6 +123,39 @@ export function validatePackage(markdown, slug) {
     fail("agents needs 1-50 entries");
     return errors;
   }
+
+  const connectionKeys = new Set();
+  if (!list(pkg.connections ?? [], MAX_CONNECTIONS)) fail(`connections allows at most ${MAX_CONNECTIONS} entries`);
+  for (const [index, connection] of (pkg.connections ?? []).entries()) {
+    const at = `connections[${index}]`;
+    if (connectionKeys.has(connection?.key)) fail(`${at}.key is listed twice: ${connection.key}`);
+    else connectionKeys.add(connection?.key);
+    validateConnection(connection, at, fail);
+  }
+
+  const skillKeys = new Set();
+  if (pkg.skills !== undefined) {
+    if (pkg.skills?.version !== 1 || !list(pkg.skills?.entries, 60) || pkg.skills.entries.length === 0) {
+      fail("skills.version must be 1 and skills.entries needs 1-60 entries");
+    }
+    for (const [index, skill] of (pkg.skills?.entries ?? []).entries()) {
+      const at = `skills.entries[${index}]`;
+      if (!text(skill?.name, 64) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(skill.name)) fail(`${at}.name is invalid`);
+      else if (skillKeys.has(skill.name)) fail(`${at}.name is listed twice: ${skill.name}`);
+      else skillKeys.add(skill.name);
+      if (!text(skill?.description, 1_024)) fail(`${at}.description is required`);
+      if (typeof skill?.instructions !== "string" || !/^---\r?\n/.test(skill.instructions) || Buffer.byteLength(skill.instructions) > 256 * 1024) {
+        fail(`${at}.instructions must be a SKILL.md file (starts with frontmatter) under 256 KB`);
+      } else {
+        const front = readSkillFrontmatter(skill.instructions);
+        const parsedDescription = front ? (parseYaml(front.yaml) ?? {}).description : undefined;
+        if (typeof parsedDescription === "string" && parsedDescription.trim() !== skill.description) {
+          fail(`${at}.description must match the embedded SKILL.md's own description`);
+        }
+      }
+    }
+  }
+
   const agentKeys = new Set();
   for (const [index, agent] of pkg.agents.entries()) {
     const at = `agents[${index}]`;
@@ -103,26 +166,46 @@ export function validatePackage(markdown, slug) {
     if (typeof agent?.title !== "string" || agent.title.length > 200) fail(`${at}.title is required (at most 200 characters)`);
     if (typeof agent?.description !== "string" || agent.description.length > 4000) fail(`${at}.description is required (at most 4000 characters)`);
     if (!COLORS.has(agent?.appearance?.color)) fail(`${at}.appearance.color must be one of: ${[...COLORS].join(", ")}`);
+    if (agent?.soul !== undefined && (typeof agent.soul !== "string" || Buffer.byteLength(agent.soul) > SOUL_MAX_BYTES)) {
+      fail(`${at}.soul must be text under ${SOUL_MAX_BYTES} bytes`);
+    }
+    if (agent?.connections !== undefined && (!list(agent.connections, MAX_CONNECTIONS) || agent.connections.some((key) => !connectionKeys.has(key)))) {
+      fail(`${at}.connections must name a declared connection`);
+    }
   }
-  if (pkg.chiefOfStaff !== undefined && !agentKeys.has(pkg.chiefOfStaff)) fail(`chiefOfStaff "${pkg.chiefOfStaff}" is not an agent key`);
+  if (pkg.team !== undefined) {
+    if (!text(pkg.team?.name, 60)) fail("team.name is required (at most 60 characters)");
+    if (pkg.team?.leader !== undefined && !agentKeys.has(pkg.team.leader)) fail(`team.leader "${pkg.team.leader}" is not an agent key`);
+    if (pkg.team?.brief !== undefined && (typeof pkg.team.brief !== "string" || Buffer.byteLength(pkg.team.brief) > TEAM_BRIEF_MAX_BYTES)) {
+      fail(`team.brief must be text under ${TEAM_BRIEF_MAX_BYTES} bytes`);
+    }
+  } else {
+    fail("team is required whenever a package has agents");
+  }
 
   const playbookKeys = new Set();
-  if (!list(pkg.playbooks, 80) || pkg.playbooks.length === 0) fail("playbooks needs 1-80 entries");
-  for (const [index, playbook] of (Array.isArray(pkg.playbooks) ? pkg.playbooks : []).entries()) {
-    const at = `playbooks[${index}]`;
-    if (!text(playbook?.key, 64) || !KEY.test(playbook.key)) fail(`${at}.key is invalid`);
-    else if (playbookKeys.has(playbook.key)) fail(`${at}.key bị trùng: ${playbook.key}`);
-    else playbookKeys.add(playbook.key);
-    if (!text(playbook?.name, 100) || !text(playbook?.summary, 300) || !text(playbook?.instructions, 24_000)) {
-      fail(`${at} needs name, summary and instructions`);
-    }
-    if (!list(playbook?.triggers, 30) || playbook.triggers.length === 0 || playbook.triggers.some((value) => !text(value, 100))) {
-      fail(`${at}.triggers needs 1-30 phrases`);
+  if (pkg.playbooks !== undefined) {
+    if (!list(pkg.playbooks, 80) || pkg.playbooks.length === 0) fail("playbooks, when present, needs 1-80 entries");
+    for (const [index, playbook] of pkg.playbooks.entries()) {
+      const at = `playbooks[${index}]`;
+      if (!text(playbook?.key, 64) || !KEY.test(playbook.key)) fail(`${at}.key is invalid`);
+      else if (playbookKeys.has(playbook.key)) fail(`${at}.key bị trùng: ${playbook.key}`);
+      else playbookKeys.add(playbook.key);
+      if (!text(playbook?.name, 100) || !text(playbook?.summary, 300) || !text(playbook?.instructions, 24_000)) {
+        fail(`${at} needs name, summary and instructions`);
+      }
+      if (!list(playbook?.triggers, 30) || playbook.triggers.length === 0 || playbook.triggers.some((value) => !text(value, 100))) {
+        fail(`${at}.triggers needs 1-30 phrases`);
+      }
     }
   }
+  if (!playbookKeys.size && !skillKeys.size) fail("a package needs at least one playbook or skill across its agents");
   for (const agent of pkg.agents) {
     for (const key of agent?.playbooks ?? []) {
       if (!playbookKeys.has(key)) fail(`agent ${agent.key} uses playbook "${key}", which is not in playbooks`);
+    }
+    for (const key of agent?.skills ?? []) {
+      if (!skillKeys.has(key)) fail(`agent ${agent.key} uses skill "${key}", which is not in skills.entries`);
     }
   }
 
@@ -196,7 +279,8 @@ export function scanSecrets(content) {
 
 
 // ---------------------------------------------------------------------------------------------------------------
-// Playbooks: playbooks/<name>/SKILL.md, one capability each.
+// Playbooks: playbooks/<name>/SKILL.md, one capability each. A worker can carry one as a lightweight "playbook"
+// (trigger + instructions text only) or as a fully embedded "skill" (the whole SKILL.md file) — see readPlaybook.
 
 export const PLAYBOOK_MAX_BYTES = 256 * 1024; // QACI Duo's SKILL.md limit
 export const PLAYBOOK_BODY_MAX = 24_000; // a package playbook's instructions limit
@@ -261,7 +345,7 @@ export function validatePlaybook(raw, folder) {
   return errors;
 }
 
-/** A valid playbook's fields, as the generated package and the catalog use them. */
+/** A valid playbook's fields, as the generated package (as a playbook or an embedded skill) and the catalog use them. */
 export function readPlaybook(raw) {
   const front = readSkillFrontmatter(raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw);
   const meta = parseYaml(front.yaml);
@@ -270,13 +354,27 @@ export function readPlaybook(raw) {
     title: meta.title.trim(),
     description: meta.description.trim(),
     triggers: commaList(meta.triggers),
+    license: typeof meta.license === "string" ? meta.license.trim() : undefined,
+    compatibility: typeof meta.compatibility === "string" ? meta.compatibility.trim() : undefined,
     body: front.body.trim(),
     raw,
   };
 }
 
+/** A playbook's file, as a fully embedded `skills.entries[]` item (the real SKILL.md text, not trigger+instructions). */
+function skillEntry(playbook, source) {
+  return {
+    name: playbook.name,
+    description: playbook.description,
+    source,
+    ...(playbook.license ? { license: playbook.license } : {}),
+    ...(playbook.compatibility ? { compatibility: playbook.compatibility } : {}),
+    instructions: playbook.raw,
+  };
+}
+
 // ---------------------------------------------------------------------------------------------------------------
-// Digital Workers: workers/<id>.md, one bot each, carrying playbooks.
+// Digital Workers: workers/<id>.md, one bot each, carrying playbooks, embedded skills, connections and souls.
 
 export const WORKER_SECTIONS = ["Mission", "Working rules", "Completion rule"];
 const WORKER_FIELDS = new Set([
@@ -284,6 +382,9 @@ const WORKER_FIELDS = new Set([
   "featured", "outcomes", "setupMinutes", "apps", "playbooks",
   // Optional multi-agent extension (backward compatible: a worker with none of these behaves exactly as before).
   "agents", "chiefOfStaff", "rooms", "routines",
+  // Optional v2 extension: a full standing soul per agent, declared MCP connection slots, and whole embedded skills
+  // (as opposed to the lightweight `playbooks` mechanism). All additive; see FORMAT.md.
+  "soul", "connections", "skills", "teamBrief",
 ]);
 
 /** The text under one `## heading` of a Markdown body. */
@@ -295,7 +396,8 @@ export function section(body, heading) {
   return lines.slice(start + 1, end < 0 ? undefined : end).join("\n").trim();
 }
 
-/** Every reason a Digital Worker file would not install; `playbookNames` are the playbooks in the repository. */
+/** Every reason a Digital Worker file would not install; `playbookNames` are the playbooks in the repository
+ * (shared pool: a name may be used as a lightweight playbook, a fully embedded skill, or both). */
 export function validateWorker(markdown, slug, playbookNames) {
   const errors = [];
   const fail = (message) => errors.push(message);
@@ -333,16 +435,45 @@ export function validateWorker(markdown, slug, playbookNames) {
   for (const [index, app] of (Array.isArray(worker.apps) ? worker.apps : []).entries()) {
     if (!text(app?.slug, 64) || !KEY.test(app.slug) || !text(app?.label, 100) || !text(app?.reason, 240)) fail(`apps[${index}] needs slug, label and reason`);
   }
-  if (!list(worker.playbooks, 30) || worker.playbooks.length === 0) fail("playbooks needs 1-30 entries");
-  else {
-    const seen = new Set();
-    for (const name of worker.playbooks) {
-      if (seen.has(name)) fail(`playbook "${name}" is listed twice`);
-      seen.add(name);
-      if (!playbookNames.has(name)) fail(`playbook "${name}" does not exist as playbooks/${name}/SKILL.md`);
-    }
+  // `worker.soul` is this worker's own standing system prompt — it is the primary agent (id/name/title/description/
+  // color above), the same way `agents[].soul` is a teammate's. A worker never gets its own `connections` subset
+  // here: in practice a sensitive connection goes to a named specialist in `agents`, not the generic lead.
+  if (worker.soul !== undefined && (typeof worker.soul !== "string" || Buffer.byteLength(worker.soul) > SOUL_MAX_BYTES)) {
+    fail(`soul must be text under ${SOUL_MAX_BYTES} bytes`);
+  }
+
+  if (worker.playbooks !== undefined && (!list(worker.playbooks, 30) || worker.playbooks.length === 0)) fail("playbooks, when present, needs 1-30 entries");
+  if (worker.skills !== undefined && (!list(worker.skills, 30) || worker.skills.length === 0)) fail("skills, when present, needs 1-30 entries");
+  if ((worker.playbooks?.length ?? 0) + (worker.skills?.length ?? 0) === 0) fail("a worker needs at least one playbook or skill (playbooks: or skills:)");
+  const seen = new Set();
+  for (const name of [...(worker.playbooks ?? []), ...new Set(worker.skills ?? [])]) {
+    if (!playbookNames.has(name)) fail(`"${name}" does not exist as playbooks/${name}/SKILL.md`);
+  }
+  for (const name of worker.playbooks ?? []) {
+    if (seen.has(name)) fail(`playbook "${name}" is listed twice`);
+    seen.add(name);
+  }
+  const seenSkills = new Set();
+  for (const name of worker.skills ?? []) {
+    if (seenSkills.has(name)) fail(`skill "${name}" is listed twice`);
+    seenSkills.add(name);
   }
   const workerPlaybooks = new Set(Array.isArray(worker.playbooks) ? worker.playbooks : []);
+  const workerSkills = new Set(Array.isArray(worker.skills) ? worker.skills : []);
+
+  const connectionKeys = new Set();
+  if (worker.connections !== undefined) {
+    if (!list(worker.connections, MAX_CONNECTIONS)) fail(`connections allows at most ${MAX_CONNECTIONS} entries`);
+    for (const [index, connection] of (Array.isArray(worker.connections) ? worker.connections : []).entries()) {
+      const at = `connections[${index}]`;
+      if (connectionKeys.has(connection?.key)) fail(`${at}.key is listed twice: ${connection.key}`);
+      else connectionKeys.add(connection?.key);
+      validateConnection(connection, at, fail);
+    }
+  }
+  if (worker.teamBrief !== undefined && (typeof worker.teamBrief !== "string" || Buffer.byteLength(worker.teamBrief) > TEAM_BRIEF_MAX_BYTES)) {
+    fail(`teamBrief must be text under ${TEAM_BRIEF_MAX_BYTES} bytes`);
+  }
 
   // Optional multi-agent extension. A worker is always the primary agent `worker.id` (name/title/description/color
   // above); `agents` lists its teammates, `rooms` are shared chat rooms between them, and `routines` are scheduled
@@ -359,8 +490,17 @@ export function validateWorker(markdown, slug, playbookNames) {
       if (typeof agent?.title !== "string" || agent.title.length > 200) fail(`${at}.title is required (at most 200 characters)`);
       if (typeof agent?.description !== "string" || agent.description.length > 4000) fail(`${at}.description is required (at most 4000 characters)`);
       if (!COLORS.has(agent?.color)) fail(`${at}.color must be one of: ${[...COLORS].join(", ")}`);
+      if (agent?.soul !== undefined && (typeof agent.soul !== "string" || Buffer.byteLength(agent.soul) > SOUL_MAX_BYTES)) {
+        fail(`${at}.soul must be text under ${SOUL_MAX_BYTES} bytes`);
+      }
       if (agent?.playbooks !== undefined && (!list(agent.playbooks, 30) || agent.playbooks.some((name) => !workerPlaybooks.has(name)))) {
         fail(`${at}.playbooks must be a subset of this worker's own playbooks`);
+      }
+      if (agent?.skills !== undefined && (!list(agent.skills, 30) || agent.skills.some((name) => !workerSkills.has(name)))) {
+        fail(`${at}.skills must be a subset of this worker's own skills`);
+      }
+      if (agent?.connections !== undefined && (!list(agent.connections, MAX_CONNECTIONS) || agent.connections.some((key) => !connectionKeys.has(key)))) {
+        fail(`${at}.connections must name a key declared in this worker's own connections`);
       }
     }
   }
@@ -414,30 +554,33 @@ export function validateWorker(markdown, slug, playbookNames) {
 
 const yamlBlock = (value) => stringifyYaml(value, { lineWidth: 0 }).trimEnd();
 
-/** The QACI Duo package v1 file QACI Duo installs: a worker is one or more agents sharing the worker's playbooks. */
+/** The QACI Duo package v2 file QACI Duo installs: a worker is one or more agents sharing the worker's playbooks,
+ * embedded skills and declared connections. */
 export function workerPackage(markdown, playbooksByName) {
   const { metadata: worker, body } = splitPackage(markdown);
-  const playbooks = worker.playbooks.map((name) => playbooksByName.get(name));
+  const playbookNames = worker.playbooks ?? [];
+  const skillNames = worker.skills ?? [];
+  const playbooks = playbookNames.map((name) => playbooksByName.get(name));
+  const skills = skillNames.map((name) => playbooksByName.get(name));
   const apps = worker.apps ?? [];
+  const connections = worker.connections ?? [];
   const extraAgents = worker.agents ?? [];
-  const playbooksFor = (agent) => (agent?.playbooks?.length ? agent.playbooks : worker.playbooks);
+  const playbooksFor = (agent) => (agent?.playbooks?.length ? agent.playbooks : playbookNames.length ? playbookNames : undefined);
+  const skillsFor = (agent) => (agent?.skills?.length ? agent.skills : skillNames.length ? skillNames : undefined);
+  // Unlike playbooks/skills (every agent gets all of the worker's own by default), a connection is never handed to
+  // an agent unless explicitly listed on *that agent*: most real teams give a sensitive connection to exactly one
+  // teammate. The worker's own top-level entry never carries one — `worker.connections` is the pool of slots a
+  // teammate may be given, not a key list of its own.
+  const agent = (key, name, title, description, color, extra, connectionKeys) => ({
+    key, name, title, description, appearance: { color },
+    ...(playbooksFor(extra) ? { playbooks: playbooksFor(extra) } : {}),
+    ...(skillsFor(extra) ? { skills: skillsFor(extra) } : {}),
+    ...(extra?.soul ? { soul: extra.soul } : {}),
+    ...(connectionKeys?.length ? { connections: connectionKeys } : {}),
+  });
   const agents = [
-    {
-      key: worker.id,
-      name: worker.name,
-      title: worker.title,
-      description: worker.description,
-      appearance: { color: worker.color },
-      playbooks: playbooksFor(undefined),
-    },
-    ...extraAgents.map((agent) => ({
-      key: agent.key,
-      name: agent.name,
-      title: agent.title,
-      description: agent.description,
-      appearance: { color: agent.color },
-      playbooks: playbooksFor(agent),
-    })),
+    agent(worker.id, worker.name, worker.title, worker.description, worker.color, worker),
+    ...extraAgents.map((extra) => agent(extra.key, extra.name, extra.title, extra.description, extra.color, extra, extra.connections)),
   ];
   const chiefOfStaff = worker.chiefOfStaff ?? worker.id;
   const rooms = (worker.rooms ?? []).map((room) => ({
@@ -449,7 +592,7 @@ export function workerPackage(markdown, playbooksByName) {
   }));
   const pkg = {
     format: PACKAGE_FORMAT,
-    version: 1,
+    version: PACKAGE_VERSION,
     id: worker.id,
     release: String(worker.release),
     name: worker.name,
@@ -463,23 +606,23 @@ export function workerPackage(markdown, playbooksByName) {
     outcomes: worker.outcomes,
     setupMinutes: worker.setupMinutes ?? 5,
     requirements: { apps, capabilities: [], platforms: ["any"] },
+    team: { name: worker.name.slice(0, 60).trim(), leader: chiefOfStaff, ...(worker.teamBrief ? { brief: worker.teamBrief } : {}) },
     agents,
-    chiefOfStaff,
     ...(rooms.length ? { rooms } : {}),
     ...(routines.length ? { routines } : {}),
-    playbooks: playbooks.map((playbook) => ({
-      key: playbook.name,
-      name: playbook.title,
-      summary: playbook.description,
-      triggers: playbook.triggers,
-      instructions: playbook.body,
-    })),
+    ...(connections.length ? { connections } : {}),
+    ...(playbooks.length ? {
+      playbooks: playbooks.map((playbook) => ({
+        key: playbook.name, name: playbook.title, summary: playbook.description, triggers: playbook.triggers, instructions: playbook.body,
+      })),
+    } : {}),
+    ...(skills.length ? { skills: { version: 1, entries: skills.map((playbook) => skillEntry(playbook, worker.id)) } } : {}),
   };
-  const teamSection = agents.map((agent) => `- **${agent.name} — ${agent.title}.** ${agent.description}`).join("\n");
-  const chiefName = agents.find((agent) => agent.key === chiefOfStaff)?.name ?? worker.name;
+  const teamSection = agents.map((entry) => `- **${entry.name} — ${entry.title}.** ${entry.description}`).join("\n");
+  const chiefName = agents.find((entry) => entry.key === chiefOfStaff)?.name ?? worker.name;
   const chiefOfStaffSection = agents.length > 1
     ? `\`${chiefOfStaff}\` (${chiefName}) is the Chief of Staff: it takes the request, delegates to the right teammate and returns one answer to the user.`
-    : `\`${worker.id}\` (${worker.name}) is the only agent: it takes the request, picks the right playbook and answers the user.`;
+    : `\`${worker.id}\` (${worker.name}) is the only agent: it takes the request, picks the right playbook or skill and answers the user.`;
   const roomsSection = rooms.length
     ? ["", "## Shared rooms", "", ...rooms.map((room) =>
         `- **${room.name}** (\`${room.key}\`) — members: ${room.members.map((key) => `\`${key}\``).join(", ")}.${room.bulletin ? ` ${room.bulletin}` : ""}`)]
@@ -487,6 +630,9 @@ export function workerPackage(markdown, playbooksByName) {
   const routinesSection = routines.length
     ? ["", "## Suggested routines", "", ...routines.map((routine) =>
         `- **${routine.name}** (\`${routine.key}\`), owned by \`${routine.agent}\` — installs paused; its owner turns it on.`)]
+    : [];
+  const skillsSection = skills.length
+    ? ["", "## Skills", "", ...skills.map((playbook) => `- **${playbook.title}** (\`${playbook.name}\`): ${playbook.description}`)]
     : [];
   return [
     "---",
@@ -513,7 +659,9 @@ export function workerPackage(markdown, playbooksByName) {
     "",
     "## Connections",
     "",
-    ...(apps.length ? apps.map((app) => `- **${app.label}**${app.optional ? " (optional)" : ""}: ${app.reason}`) : ["No app connections are needed."]),
+    ...(apps.length ? apps.map((app) => `- **${app.label}**${app.optional ? " (optional)" : ""}: ${app.reason}`) : []),
+    ...(connections.length ? connections.map((connection) => `- **${connection.label}** (MCP): ${connection.reason}`) : []),
+    ...(apps.length || connections.length ? [] : ["No app connections are needed."]),
     "",
     "## Team",
     "",
@@ -527,7 +675,8 @@ export function workerPackage(markdown, playbooksByName) {
     "",
     "## Playbooks",
     "",
-    ...playbooks.map((playbook) => `- **${playbook.title}** (\`${playbook.name}\`): ${playbook.description}`),
+    ...(playbooks.length ? playbooks.map((playbook) => `- **${playbook.title}** (\`${playbook.name}\`): ${playbook.description}`) : ["None — this worker uses embedded skills only."]),
+    ...skillsSection,
     "",
     "## Completion rule",
     "",
@@ -545,7 +694,7 @@ const oneLine = (value, max) => {
 export function workerLibraryFiles(markdown, playbooksByName) {
   const { metadata: worker } = splitPackage(markdown);
   const id = worker.id;
-  const playbooks = worker.playbooks.map((name) => playbooksByName.get(name));
+  const carried = [...new Set([...(worker.playbooks ?? []), ...(worker.skills ?? [])])].map((name) => playbooksByName.get(name));
   const extraAgents = worker.agents ?? [];
   const members = [
     { key: id, name: worker.name, title: worker.title, description: worker.description, appearance: { color: worker.color } },
@@ -567,7 +716,7 @@ export function workerLibraryFiles(markdown, playbooksByName) {
     version: 1,
     team: { name: worker.name, description: oneLine(worker.tagline, 500), members, room },
   };
-  const skills = playbooks.map((playbook) => ({ path: `teams/${id}/skills/${playbook.name}/SKILL.md`, content: playbook.raw }));
+  const skills = carried.map((playbook) => ({ path: `teams/${id}/skills/${playbook.name}/SKILL.md`, content: playbook.raw }));
   const readme = [
     `# ${worker.name}`,
     "",
@@ -577,7 +726,7 @@ export function workerLibraryFiles(markdown, playbooksByName) {
     "",
     "## Playbook",
     "",
-    ...playbooks.map((playbook) => `- **${playbook.title}** — ${playbook.description} ([SKILL.md](../../playbooks/${playbook.name}/SKILL.md))`),
+    ...carried.map((playbook) => `- **${playbook.title}** — ${playbook.description} ([SKILL.md](../../playbooks/${playbook.name}/SKILL.md))`),
     "",
     `Source: \`workers/${id}.md\` on \`main\`.`,
     "",

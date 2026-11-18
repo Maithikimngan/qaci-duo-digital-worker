@@ -60,7 +60,10 @@ if (errors.length > 0) {
   for (const error of errors) console.error(`- ${error}`);
   process.exitCode = 1;
 } else {
-  const used = new Set(workers.flatMap((worker) => splitPackage(worker.markdown).metadata.playbooks));
+  const used = new Set(workers.flatMap((worker) => {
+    const { playbooks: carriesPlaybooks, skills: carriesSkills } = splitPackage(worker.markdown).metadata;
+    return [...(carriesPlaybooks ?? []), ...(carriesSkills ?? [])];
+  }));
   const loose = [...playbooks.keys()].filter((name) => !used.has(name));
   console.log(`OK: ${workers.length} Digital Worker(s) and ${playbooks.size} playbook(s) are valid; ${files.length} files scanned for secrets.`);
   if (loose.length) console.log(`Playbooks not carried by any Digital Worker (still importable through the Skills library): ${loose.join(", ")}`);

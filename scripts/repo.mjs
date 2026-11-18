@@ -24,7 +24,8 @@ export function loadRepository(root, paths) {
     const problems = validateWorker(markdown, id, names);
     for (const problem of problems) errors.push(`${path}: ${problem}`);
     if (problems.length > 0) continue;
-    if (splitPackage(markdown).metadata.playbooks.some((name) => !playbooks.has(name))) continue; // reported above
+    const { metadata } = splitPackage(markdown);
+    if ([...(metadata.playbooks ?? []), ...(metadata.skills ?? [])].some((name) => !playbooks.has(name))) continue; // reported above
     // The generated package must pass the same checks a hand-written QACI Duo package file would.
     const generated = validatePackage(workerPackage(markdown, playbooks), id);
     for (const problem of generated) errors.push(`${path}: the generated package is invalid: ${problem}`);

@@ -1,16 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/vanhaito/qaci-duo-playbooks/main/schema/package.schema.json",
-  "title": "QACI Duo package v1",
-  "description": "The YAML frontmatter of a generated packages/<id>.md file (what scripts/lib.mjs's workerPackage() writes and validatePackage() checks). This schema documents the hand-written validator in scripts/lib.mjs; that file remains the source of truth and the authoritative CI gate — this is tooling/editor documentation only, and may lag a rule that changed there. `additionalProperties` is left permissive wherever validatePackage() itself does not exhaustively reject unknown keys (only workers/<id>.md frontmatter and playbooks/<name>/SKILL.md frontmatter are closed sets in the real validator). Adapted from openmausbot-teams' schema/team.schema.json (MIT); the format discriminator was renamed from the bare `botmrr: 1` key used there to `format`/`version` below. See PORTING_NOTES.md.",
+  "title": "QACI Duo package v2",
+  "description": "The YAML frontmatter of a generated packages/<id>.md file (what scripts/lib.mjs's workerPackage() writes and validatePackage() checks). This schema documents the hand-written validator in scripts/lib.mjs; that file remains the source of truth and the authoritative CI gate — this is tooling/editor documentation only, and may lag a rule that changed there. `additionalProperties` is left permissive wherever validatePackage() itself does not exhaustively reject unknown keys (only workers/<id>.md frontmatter and playbooks/<name>/SKILL.md frontmatter are closed sets in the real validator). Adapted from openmausbot-teams' schema/team.schema.json (MIT); the format discriminator was renamed from the bare `botmrr: 1` key used there to `format`/`version` below, and the shape matches QACI Duo's own package v2 (shared/package-format.ts's packageDocumentSchema): a nested `team` object instead of a flat `chiefOfStaff`, plus `connections` and `skills.entries`. See PORTING_NOTES.md.",
   "type": "object",
   "required": [
     "format", "version", "id", "release", "name", "tagline", "summary", "category", "author", "license",
-    "outcomes", "setupMinutes", "requirements", "agents", "playbooks"
+    "outcomes", "setupMinutes", "requirements", "agents", "team"
   ],
   "properties": {
     "format": { "const": "qaci-duo.package" },
-    "version": { "const": 1 },
+    "version": { "const": 2 },
     "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
     "release": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "name": { "type": "string", "minLength": 1, "maxLength": 100 },
@@ -76,13 +76,49 @@
             },
             "additionalProperties": true
           },
+          "soul": { "type": "string", "maxLength": 24000, "description": "This agent's standing system prompt." },
           "playbooks": { "type": "array", "items": { "type": "string" } },
-          "skills": { "type": "array", "items": { "type": "string" } }
+          "skills": { "type": "array", "items": { "type": "string" }, "description": "Names from skills.entries[] this agent carries." },
+          "connections": { "type": "array", "items": { "type": "string" }, "description": "Keys from the top-level connections[] this agent is given. Never defaults to all — omitted means none." }
         },
         "additionalProperties": true
       }
     },
-    "chiefOfStaff": { "type": "string" },
+    "team": {
+      "type": "object",
+      "required": ["name"],
+      "description": "Required whenever the package has agents (always true for a generated package).",
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "leader": { "type": "string", "description": "An agent key; the Chief of Staff." },
+        "brief": { "type": "string", "maxLength": 24000 }
+      },
+      "additionalProperties": true
+    },
+    "connections": {
+      "description": "Up to 20 declared MCP slots. Never carries a secret value — only the address and the header value names an installer supplies.",
+      "type": "array", "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["key", "label", "reason", "mcp"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$", "maxLength": 64 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "mcp": {
+            "type": "object",
+            "required": ["transport", "url", "valueNames"],
+            "properties": {
+              "transport": { "enum": ["http", "sse"] },
+              "url": { "type": "string", "pattern": "^https://\\S+$" },
+              "valueNames": { "type": "array", "maxItems": 32, "items": { "type": "string" }, "uniqueItems": true }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    },
     "rooms": {
       "type": "array", "maxItems": 30,
       "items": {
@@ -158,6 +194,7 @@
       }
     },
     "playbooks": {
+      "description": "A package needs at least one playbook or skill (here or in `skills.entries`) across its agents.",
       "type": "array", "minItems": 1, "maxItems": 80,
       "items": {
         "type": "object",
@@ -174,6 +211,35 @@
         },
         "additionalProperties": true
       }
+    },
+    "skills": {
+      "description": "Whole embedded skills, each a real SKILL.md file, as opposed to the lighter `playbooks[]` shape above.",
+      "type": "object",
+      "required": ["version", "entries"],
+      "properties": {
+        "version": { "const": 1 },
+        "entries": {
+          "type": "array", "minItems": 1, "maxItems": 60,
+          "items": {
+            "type": "object",
+            "required": ["name", "description", "instructions"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 64 },
+              "description": { "type": "string", "minLength": 1, "maxLength": 1024 },
+              "source": { "type": "string", "maxLength": 2000 },
+              "license": { "type": "string", "maxLength": 200 },
+              "compatibility": { "type": "string", "maxLength": 200 },
+              "instructions": {
+                "type": "string", "maxLength": 262144,
+                "pattern": "^---\\r?\\n",
+                "description": "The whole SKILL.md file, verbatim; its own frontmatter `description` must match the sibling field above."
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
     }
   },
   "additionalProperties": true

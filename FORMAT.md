@@ -47,24 +47,37 @@ YAML frontmatter followed by a Markdown body.
 | `category`, `license`, `author.name` | yes | |
 | `color` | yes | `green`, `blue`, `red`, `orange`, `purple`, `cyan`, `pink`, `yellow`, `teal` or `coral` |
 | `outcomes` | yes | 1–12 results the user gets |
-| `playbooks` | yes | 1–30 folder names from `playbooks/` |
+| `playbooks` | one of `playbooks`/`skills` | 1–30 folder names from `playbooks/`, carried as lightweight trigger+instructions |
+| `skills` | one of `playbooks`/`skills` | 1–30 folder names from `playbooks/`, each embedded whole as a real, importable skill — see below |
 | `apps` | no | Apps the worker can use: `slug`, `label`, `reason`, `optional`. Declared only, never with credentials |
 | `tags`, `featured`, `setupMinutes` | no | `featured: true` lists the worker first |
+| `soul` | no | This worker's own standing system prompt, under 24,000 bytes. Optional; without it the worker runs on `description` alone, as before |
+| `connections` | no | Up to 20 declared MCP slots, available to be handed to a specific agent (see below): `key`, `label`, `reason`, `mcp: {transport: http\|sse, url, valueNames}`. A slot never carries a secret value — only the address and the names of the header values an installer supplies |
+| `teamBrief` | no | Shared instructions for the whole team, under 24,000 bytes (becomes the generated package's `team.brief`) |
 
-The body needs three sections: `## Mission`, `## Working rules` (including which playbook to use when) and
-`## Completion rule`.
+A worker needs at least one `playbooks` or `skills` entry (or both); a playbook folder may be used as either, or both,
+across different workers. The body needs three sections: `## Mission`, `## Working rules` (including which
+playbook/skill to use when) and `## Completion rule`.
+
+### Playbook vs. skill: the same `playbooks/<name>/SKILL.md` file, two ways to carry it
+
+A `playbooks:` entry becomes a lightweight trigger + instructions pair in the generated package
+(`package.playbooks[]`) — enough for most capabilities. A `skills:` entry embeds the **whole SKILL.md file**
+verbatim into the generated package (`package.skills.entries[]`), matching QACI Duo's own Skills library format
+exactly; use this when the capability needs to also stand on its own as an importable skill, or when porting a
+real skill file rather than writing a new lightweight playbook. A worker may use only `playbooks`, only `skills`,
+or both (QACI Duo's real `qaciduo-adlc` package, for example, uses only `skills`, no `playbooks` at all).
 
 ### Optional: more than one agent, a shared room, paused routines
 
-A worker is always its own agent (`id`/`name`/`title`/`description`/`color` above). These fields let it carry a
-whole small team instead of a single bot. **All of them are optional and purely additive** — a worker file with
-none of them behaves exactly as it did before this extension, and every worker in this repository today uses none
-of them.
+A worker is always its own agent (`id`/`name`/`title`/`description`/`color`/`soul` above). These fields let it
+carry a whole small team instead of a single bot. **All of them are optional and purely additive** — a worker file
+with none of them behaves exactly as it did before this extension.
 
 | Field | Required | Meaning |
 |---|---|---|
-| `agents` | no | Up to 49 extra teammates (50 agents total): `key`, `name`, `title`, `description`, `color`, and an optional `playbooks` subset of this worker's own `playbooks` (defaults to all of them) |
-| `chiefOfStaff` | no | The lead agent's key — this worker's own `id`, or one of `agents[].key`. Defaults to this worker's `id` |
+| `agents` | no | Up to 49 extra teammates (50 agents total): `key`, `name`, `title`, `description`, `color`, an optional `soul` (standing system prompt, under 24,000 bytes), an optional `playbooks` subset of this worker's own `playbooks` (defaults to all of them), an optional `skills` subset of this worker's own `skills` (defaults to all of them), and an optional `connections` subset of this worker's own `connections` (defaults to **none** — unlike playbooks/skills, a connection is never handed to an agent unless that agent explicitly lists it) |
+| `chiefOfStaff` | no | The lead agent's key — this worker's own `id`, or one of `agents[].key`. Defaults to this worker's `id`; becomes the generated package's `team.leader` |
 | `rooms` | no | Up to 30 shared chat rooms between agents: `key`, `name`, `bulletin`, `members` (agent keys), `defaultResponder` (`{kind: agent, agent: <key>}`, `{kind: everyone}` or `{kind: mentions}`) |
 | `routines` | no | Up to 50 scheduled automations: `key`, `name`, `agent`, `prompt`, `runOn` (`duo` or `cloud`), `durationMinutes` (5-240), `schedule` (`{type: daily, time: "HH:MM", weekdays: [0-6]}` or `{type: once, at: <epoch ms>}`), and `enabledAfterInstall: false` — **always `false`**: a routine installs paused and its owner turns it on |
 
@@ -80,12 +93,12 @@ truth and the only gate CI actually enforces, so treat a difference between the 
 
 ## The `library` branch (generated)
 
-After each merge the workflow builds, for every worker, a QACI Duo package v1 file (`packages/<id>.md`, YAML
-frontmatter `format: qaci-duo.package` / `version: 1`) whose agents are the worker's own agent plus any `agents` it
-declares, carrying the worker's playbooks, with any `rooms` and `routines` it declares. It also writes the
-`catalog.json` (`format: qaci-duo.catalog`) that QACI Duo reads, each worker's team manifest
-(`teams/<id>/team.mausteam.json`, `format: qaci-duo.team`), and a copy of every `playbooks/<name>/SKILL.md` for
-individual import.
+After each merge the workflow builds, for every worker, a QACI Duo package v2 file (`packages/<id>.md`, YAML
+frontmatter `format: qaci-duo.package` / `version: 2`) whose agents are the worker's own agent plus any `agents` it
+declares, carrying the worker's playbooks and skills, with any `connections`, `rooms` and `routines` it declares,
+under a `team: {name, leader, brief}` object. It also writes the `catalog.json` (`format: qaci-duo.catalog`) that
+QACI Duo reads, each worker's team manifest (`teams/<id>/team.mausteam.json`, `format: qaci-duo.team`), and a copy
+of every `playbooks/<name>/SKILL.md` (playbook or skill) for individual import.
 
 > **Format rename.** This repository's package/manifest/catalog format is adapted from the
 > [openmausbot-teams](https://github.com/milind-soni/openmausbot-teams) project (MIT); see

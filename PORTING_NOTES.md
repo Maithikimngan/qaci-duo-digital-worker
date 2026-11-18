@@ -15,13 +15,16 @@ a breaking change for anything that reads this repository's generated files.
 | Catalog (`catalog.json`) `format` | `openmaus.catalog` | `qaci-duo.catalog` |
 | A routine's `runOn` value for the in-app runtime | `maus` | `duo` (`cloud` is unchanged) |
 
-**This is a breaking change you must act on.** The real QACI Duo app's own parser — referenced only in code
-comments here as `shared/skill-md.ts` and `shared/package-format.ts`, and not present in this repository — almost
-certainly still expects `botmrr: 1`, `openmaus.team`, `openmaus.catalog` and `runOn: maus`. Unless that parser is
-updated to also accept the new strings above, it will fail to import anything the `library` branch generates from
-this branch onward. This was an explicit, informed choice (see the task this branch was built from), not an
-oversight — but it means **do not merge this to `main` until the app side is updated**, or coordinate a dual-read
-window in the app first.
+**This is a breaking change you must act on.** Confirmed by reading the real `qaci-duo` app's own source directly
+(not just the comments here): `shared/package-format.ts` still exports `PACKAGE_FORMAT = "openmaus.package"` (used
+for **both** package v1 and v2, and `botmrr: 1` is still the live Markdown-v1 discriminator it checks via
+`markdownDocument()`); `server/team-manifest.ts` exports `TEAM_MANIFEST_FORMAT = "openmaus.team"`; and
+`server/team-library.ts`'s `parseTeamCatalog()` checks the literal `"openmaus.catalog"` (that file is what currently
+fetches the *external* openmausbot-teams repository for the "paste a GitHub link" / Team Library panel feature — a
+separate surface from the official Templates tab). Unless that parser is updated to also accept the new strings
+above, it will fail to import anything the `library` branch generates from this branch onward. This was an explicit,
+informed choice (see the task this branch was built from), not an oversight — but it means **do not merge this to
+`main` until the app side is updated**, or coordinate a dual-read window in the app first.
 
 Where this is implemented: `scripts/lib.mjs` (`PACKAGE_FORMAT`, `TEAM_FORMAT`, `CATALOG_FORMAT`, `ROUTINE_RUNTIMES`
 constants, used by `validatePackage`, `workerPackage`, `workerLibraryFiles`, `buildCatalog`). Also updated:
@@ -104,7 +107,38 @@ a format identifier.
   unmapped slug, so this is a safe trim, not a behavior change for any app this repository's workers actually
   declare (currently only `github`).
 
-## 4. Verification
+## 4. Later addition: package v2 (soul, connections, embedded skills)
+
+A follow-up commit on this same branch upgraded the generated package from `version: 1` to `version: 2` (still
+`format: qaci-duo.package`) and extended the authoring format in `workers/<id>.md` so it can express what QACI
+Duo's own real official playbooks (`qaciduo-adlc`, `qaciduo-app-rebuild`) actually need, matching the real app's
+`packageDocumentSchema` (v2) in `shared/package-format.ts`:
+
+- `soul` (worker-level and `agents[].soul`) — a standing system prompt, under 24,000 bytes, separate from
+  `description`.
+- A nested `team: {name, leader, brief}` object replaces the flat `chiefOfStaff` package field (the real v1 schema
+  keeps `chiefOfStaff` flat; v2 nests it, and `connections` only exists in v2 — which is why the jump to v2 was
+  necessary, not optional). The authoring field is still called `chiefOfStaff` in `workers/<id>.md` for
+  familiarity; the generator maps it to `team.leader`. A new `teamBrief` authoring field maps to `team.brief`.
+  **The worker's own top-level identity never gets a `connections` subset of its own** — only `agents[]` entries
+  can, since in practice a sensitive connection goes to one named specialist, not the generic lead.
+- `connections[]` (worker-level pool) and `agents[].connections` (per-agent subset, **no default** — unlike
+  playbooks/skills, where an agent gets all of the worker's own by default, a connection is only handed to an
+  agent that explicitly lists it). A connection slot never carries a secret value, only an address and the names
+  of header values an installer will supply.
+- `skills`/`agents[].skills`: a worker-level `skills:` list (parallel to `playbooks:`) that embeds a
+  `playbooks/<name>/SKILL.md` file **whole**, verbatim, into `package.skills.entries[]` — matching QACI Duo's own
+  Skills-library format exactly — instead of parsing it into the lighter `package.playbooks[]` shape
+  (key/name/summary/triggers/instructions only). The real `qaciduo-adlc` package uses only `skills[]`, no
+  `playbooks[]` at all, so a worker can now use `skills` alone, `playbooks` alone, or both; it needs at least one.
+
+This did **not** yet include writing `workers/adlc.md` / `workers/craft.md` themselves — that depends on reading
+ADLC/Craft's real source in `qaci-duo` (`server/adlc-playbook.ts`, `server/app-rebuild-playbook.ts`,
+`docs/playbooks/*.json`), which was not reachable from the branch/commit checked out there at the time; see the
+plan this work came from for the follow-up. The four research-workflow sample workers and their twelve playbooks
+were deleted in the same pass, by request, so `workers/` and `playbooks/` are empty until that follow-up lands.
+
+## 5. Verification
 
 - `npm ci --ignore-scripts` then `npm test` → 4 Digital Workers, 12 playbooks valid, all unit tests pass (including
   two new ones for the multi-agent/rooms/routines extension).

@@ -13,20 +13,19 @@ workers/<id>.md ───────────┴─► pull request ─► C
 
 ## Available today
 
-The first workers follow a research workflow. **Each step is one Digital Worker, and each task within the step is one
-of its playbooks.**
+This repository is being repointed to hold QACI Duo's own official Digital Workers (starting with `adlc` and
+`craft`, QACI Duo's ADLC and App Rebuild teams) rather than the research-workflow sample workers it shipped with
+earlier — `workers/` and `playbooks/` are empty right now while that content is written against the schema below.
 
-| Step | Digital Worker | Playbooks |
-|---|---|---|
-| 2. Literature, domain knowledge and ideation | **Literature Scout** | `survey-a-field`, `learn-domain-knowledge`, `validate-idea` |
-| 3. Implementation, experiments and verification | **Experiment Engineer** | `idea-to-prototype`, `run-experiments`, `verify-agent-code` |
-| 4. Figures, writing and rebuttal | **Paper Writer** | `generate-figures`, `paper-writing-pipeline`, `rebuttal` |
-| 5. Agents for PhD applications | **PhD Application Advisor** | `find-supervisors`, `mentor-outreach`, `application-review` |
-
-A new step becomes a new worker; a new task within a step becomes a new playbook on that step's worker.
+A Digital Worker can be a single bot or carry a whole small team: more than one `agents[]` entry, a shared room, a
+standing `soul` per agent, declared MCP `connections`, and whole embedded `skills` as well as lightweight
+`playbooks`. See [FORMAT.md](FORMAT.md) for the full field reference and
+[`templates/worker.md`](templates/worker.md) for a commented example.
 
 Every playbook follows the same shape — *When to use*, *Inputs*, *Procedure* with a check per step, *Output* template,
 *Quality checklist*, *Guardrails* and an *Example* — so a worker knows what to ask, what to do and what to hand back.
+A capability carried as a full embedded `skill` instead is the same `SKILL.md` file, just attached differently — see
+FORMAT.md's *Playbook vs. skill* section.
 
 ## Use them in QACI Duo
 
