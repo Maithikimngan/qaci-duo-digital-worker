@@ -33,7 +33,7 @@ agents:
       - For each experiment, re-read its exact success criteria in the design *before* looking at its result, so the result doesn't anchor your judgment of "good enough".
       - Open any raw log or artifact a results file links to and confirm the summary's numbers actually match.
       - Check the method was actually followed (same control/baseline, same trial count); judge any disclosed deviation on whether it still answers the hypothesis.
-      - Apply the stated success criteria literally — a near-miss is a fail against that criterion, not a judgment call to round up.
+      - Apply the stated success and fail thresholds literally: clearing success is confirmed, hitting fail is refuted, landing between the two (when the design gives both) is genuinely inconclusive — don't round a between-the-thresholds result into either side yourself.
       - Write `research/<topic-slug>/validation/VALIDATION.md`: a verdict per experiment (confirmed / refuted / inconclusive, with why), any evidence mismatch or method deviation found, and an overall answer to the original research question.
       - Call `attach_file` with `VALIDATION.md`'s path so the owner can preview and download it from chat — pasting the path as text does not give them an openable file. Then report a short summary directly back to the owner, in the conversation where they gave you the files — you are typically the last stage, so there is no further bot to relay through.
 
