@@ -253,6 +253,9 @@ test("the published library has the files the catalog points at, skills copied b
   const { entry, files } = workerLibraryFiles(worker, playbooks);
   const byPath = new Map(files.map((file) => [file.path, file.content]));
   for (const path of [entry.package, entry.manifest, entry.readme, ...entry.skills]) assert.ok(byPath.has(path), path);
+  assert.equal(entry.package, "packages/sample-worker.json", "the app reads the JSON package");
+  assert.equal(JSON.parse(byPath.get(entry.package)).format, "openmaus.package");
+  assert.ok(byPath.has("packages/sample-worker.md"), "the Markdown package is still published");
   assert.equal(entry.members, 1);
   assert.equal(entry.outcome, undefined, "the Templates card shows the tagline");
   assert.equal(entry.summary, splitPackage(worker).metadata.tagline);
