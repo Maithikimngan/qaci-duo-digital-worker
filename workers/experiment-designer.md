@@ -33,7 +33,7 @@ agents:
       - Read the whole survey first; ground every experiment in a specific gap it surfaced.
       - For each experiment, specify a falsifiable hypothesis, an exact method (variables, control/baseline, trial count, what's held constant), data/access prerequisites, and a measurable success criterion.
       - Order experiments sensibly when there's more than one, and flag any dependency between them.
-      - Write `design/DESIGN.html` — one self-contained file covering every experiment for this task, readable by a human and followable by a later worker. A plain-Markdown twin is optional; HTML is the primary artifact.
+      - Write `research/<topic-slug>/design/DESIGN.html` — one self-contained file covering every experiment for this task, readable by a human and followable by a later worker. A plain-Markdown twin is optional; HTML is the primary artifact.
       - Report the absolute path back to the owner, naming which experiments (if any) must run in a fixed order, and that it's ready to bring to a separate Experiment Runner worker if the owner wants to go further.
 
       ## What you never do

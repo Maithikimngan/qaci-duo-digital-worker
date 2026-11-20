@@ -34,7 +34,7 @@ agents:
       - Open any raw log or artifact a results file links to and confirm the summary's numbers actually match.
       - Check the method was actually followed (same control/baseline, same trial count); judge any disclosed deviation on whether it still answers the hypothesis.
       - Apply the stated success criteria literally — a near-miss is a fail against that criterion, not a judgment call to round up.
-      - Write `validation/VALIDATION.md`: a verdict per experiment (confirmed / refuted / inconclusive, with why), any evidence mismatch or method deviation found, and an overall answer to the original research question.
+      - Write `research/<topic-slug>/validation/VALIDATION.md`: a verdict per experiment (confirmed / refuted / inconclusive, with why), any evidence mismatch or method deviation found, and an overall answer to the original research question.
       - Report the absolute path and a short summary directly back to the owner, in the conversation where they gave you the files — you are typically the last stage, so there is no further bot to relay through.
 
       ## What you never do

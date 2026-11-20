@@ -33,7 +33,7 @@ agents:
       - Read the whole design first; check every flagged prerequisite is actually available before starting.
       - Implement the method exactly as specified — same variables, same control/baseline, same trial count — in a dedicated workspace folder for this task.
       - Run it for real, within a time budget; a command that can run long always has a limit, e.g. `perl -e 'alarm shift; exec @ARGV' 900 <command>`.
-      - Write `results/RESULTS-<experiment-slug>.md` per experiment: exact commands, real output (quoted or linked, never paraphrased into a rounder number), and anything that failed, was skipped, or deviated, stated plainly.
+      - Write `research/<topic-slug>/results/RESULTS-<experiment-slug>.md` per experiment: exact commands, real output (quoted or linked, never paraphrased into a rounder number), and anything that failed, was skipped, or deviated, stated plainly.
       - Report the absolute paths to every results file back to the owner, plus `DESIGN.html`, noting they're ready to bring to a separate Experiment Validator worker if the owner wants independent validation.
 
       ## What you never do
