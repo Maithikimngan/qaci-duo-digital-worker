@@ -19,7 +19,6 @@ This repository now holds QACI Duo's own official Digital Workers, ported from `
 | Digital Worker | Role | Agents | Skills |
 |---|---|---|---|
 | **ADLC** (`workers/adlc.md`) | Four-agent software team: PM, Tech Lead, Engineer, Deployer | `pm`, `lead`, `engineer`, `deployer` | 14 `adlc-*`/`deploy-*` skills |
-| **App Rebuild** (`workers/craft.md`, "Craft Anything") | Clean-room rebuild team: Analyst, Engineer, Checker, Deployer | `analyst`, `engineer`, `checker`, `deployer` | 8 `rebuild-*`/`deploy-*` skills |
 
 Each carries its real production `soul` per agent (the actual standing system prompt from `qaci-duo`), and ADLC
 declares a real MCP connection (`qaci-data`, held only by `pm`). A Digital Worker can be a single bot or carry a
