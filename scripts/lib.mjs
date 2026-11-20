@@ -803,7 +803,8 @@ export function workerLibraryFiles(markdown, playbooksByName) {
     // No `outcome`: the Templates card then shows the summary, which is the worker's tagline.
     setupMinutes: worker.setupMinutes ?? 5,
     ...(worker.featured === true ? { featured: true } : {}),
-    package: `packages/${id}.md`,
+    // The app's JSON package reader; packages/<id>.md (this repository's own format) is still published for people.
+    package: `packages/${id}.json`,
     manifest: `teams/${id}/team.mausteam.json`,
     readme: `teams/${id}/README.md`,
     members: members.length,
@@ -813,7 +814,8 @@ export function workerLibraryFiles(markdown, playbooksByName) {
   return {
     entry,
     files: [
-      { path: entry.package, content: workerPackage(markdown, playbooksByName) },
+      { path: entry.package, content: `${JSON.stringify(workerRealPackage(markdown, playbooksByName), null, 2)}\n` },
+      { path: `packages/${id}.md`, content: workerPackage(markdown, playbooksByName) },
       { path: entry.manifest, content: `${JSON.stringify(manifest, null, 2)}\n` },
       { path: entry.readme, content: readme },
       ...skills,

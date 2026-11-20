@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildCatalog, splitPackage, workerLibraryFiles, workerRealPackage } from "./lib.mjs";
+import { buildCatalog, splitPackage, workerLibraryFiles } from "./lib.mjs";
 import { loadRepository } from "./repo.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -29,10 +29,6 @@ for (const worker of workers) {
   const { entry, files } = workerLibraryFiles(worker.markdown, playbooks);
   entries.push(entry);
   for (const file of files) write(file.path, file.content);
-  // The real app's own JSON import shape (confirmed against a real, unmodified QACI Duo server — see
-  // PORTING_NOTES.md) — packages/<id>.md above uses this repository's own renamed format instead, which the
-  // real app's Markdown import path does not currently read.
-  write(`packages/${worker.id}.json`, `${JSON.stringify(workerRealPackage(worker.markdown, playbooks), null, 2)}\n`);
   const { playbooks: carriesPlaybooks, skills: carriesSkills } = splitPackage(worker.markdown).metadata;
   for (const name of [...(carriesPlaybooks ?? []), ...(carriesSkills ?? [])]) usedBy.set(name, [...(usedBy.get(name) ?? []), entry.name]);
 }
