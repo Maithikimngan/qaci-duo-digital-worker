@@ -60,9 +60,3 @@ reads only `library`, so a change reaches users only after review and merge.
 Digital Workers and playbooks already in this repository and lets you read or copy any of them — see
 [PORTING_NOTES.md](PORTING_NOTES.md) for what it adapts versus this repository's own CI (`npm test` / `npm run
 build`, used to publish the `library` branch), which is unchanged and still the only thing CI runs.
-
-## Licence
-
-MIT. The validation approach, the package/team/catalog file format, and the Next.js site are adapted from the
-[openmausbot-teams](https://github.com/milind-soni/openmausbot-teams) project (MIT) as prior art; see
-[PORTING_NOTES.md](PORTING_NOTES.md) for what changed.

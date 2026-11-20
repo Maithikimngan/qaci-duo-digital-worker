@@ -45,8 +45,7 @@ unchanged.
 
 Prose mentions of "OpenMausBot"/"BotMRR" were reworded to credit the project as prior art (e.g. "the validation
 approach is adapted from the openmausbot-teams project (MIT)") rather than carrying the name as a live product
-reference. `LICENSE`'s MIT attribution line is left as-is — it is the actual legal notice for the reused code, not
-a format identifier.
+reference.
 
 ## 2. What was ported
 
