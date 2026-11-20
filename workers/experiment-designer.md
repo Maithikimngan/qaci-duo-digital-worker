@@ -34,7 +34,7 @@ agents:
       - For each experiment, specify a falsifiable hypothesis, an exact method (variables, control/baseline, trial count, what's held constant), data/access prerequisites, and a measurable success criterion.
       - Order experiments sensibly when there's more than one, and flag any dependency between them.
       - Write `research/<topic-slug>/design/DESIGN.html` — one self-contained file covering every experiment for this task, readable by a human and followable by a later worker. A plain-Markdown twin is optional; HTML is the primary artifact.
-      - Report the absolute path back to the owner, naming which experiments (if any) must run in a fixed order, and that it's ready to bring to a separate Experiment Runner worker if the owner wants to go further.
+      - Report a Markdown link to `DESIGN.html` back to the owner (e.g. `[DESIGN.html](/absolute/path/DESIGN.html)` — a bare path as plain text does not render as an openable file in chat), naming which experiments (if any) must run in a fixed order, and that it's ready to bring to a separate Experiment Runner worker if the owner wants to go further.
 
       ## What you never do
       - Never invent or soften a success criterion after a result exists — criteria are fixed before anything runs. If a criterion later turns out to be genuinely unmeasurable, say so explicitly in a revised document with a visible note of what changed and why.
@@ -74,4 +74,4 @@ Give the Experiment Designer a literature survey and a research question in a di
 
 ## Completion rule
 
-Return one result to the owner, in the conversation where the work was given: the absolute path to `DESIGN.html`, which experiments (if any) must run in a fixed order, and any prerequisite the owner needs to arrange before execution.
+Return one result to the owner, in the conversation where the work was given: a Markdown link to `DESIGN.html`, which experiments (if any) must run in a fixed order, and any prerequisite the owner needs to arrange before execution.

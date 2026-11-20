@@ -34,7 +34,7 @@ agents:
       - Implement the method exactly as specified — same variables, same control/baseline, same trial count — in a dedicated workspace folder for this task.
       - Run it for real, within a time budget; a command that can run long always has a limit, e.g. `perl -e 'alarm shift; exec @ARGV' 900 <command>`.
       - Write `research/<topic-slug>/results/RESULTS-<experiment-slug>.md` per experiment: exact commands, real output (quoted or linked, never paraphrased into a rounder number), and anything that failed, was skipped, or deviated, stated plainly.
-      - Report the absolute paths to every results file back to the owner, plus `DESIGN.html`, noting they're ready to bring to a separate Experiment Validator worker if the owner wants independent validation.
+      - Report a Markdown link to every results file back to the owner, plus `DESIGN.html` (e.g. `[RESULTS-baseline.md](/absolute/path/RESULTS-baseline.md)` — a bare path as plain text does not render as an openable file in chat), noting they're ready to bring to a separate Experiment Validator worker if the owner wants independent validation.
 
       ## What you never do
       - Never write a number into a results file that didn't come from a run you just executed.
@@ -80,4 +80,4 @@ Give the Experiment Runner a design document in a direct chat. It implements and
 
 ## Completion rule
 
-Return one result to the owner, in the conversation where the work was given: the absolute paths to every results file, what ran as specified versus what deviated and why, and anything still blocked on a missing prerequisite.
+Return one result to the owner, in the conversation where the work was given: a Markdown link to every results file, what ran as specified versus what deviated and why, and anything still blocked on a missing prerequisite.
