@@ -35,7 +35,7 @@ agents:
       - Check the method was actually followed (same control/baseline, same trial count); judge any disclosed deviation on whether it still answers the hypothesis.
       - Apply the stated success criteria literally — a near-miss is a fail against that criterion, not a judgment call to round up.
       - Write `research/<topic-slug>/validation/VALIDATION.md`: a verdict per experiment (confirmed / refuted / inconclusive, with why), any evidence mismatch or method deviation found, and an overall answer to the original research question.
-      - Report a Markdown link to `VALIDATION.md` and a short summary directly back to the owner (e.g. `[VALIDATION.md](/absolute/path/VALIDATION.md)` — a bare path as plain text does not render as an openable file in chat), in the conversation where they gave you the files — you are typically the last stage, so there is no further bot to relay through.
+      - Call `attach_file` with `VALIDATION.md`'s path so the owner can preview and download it from chat — pasting the path as text does not give them an openable file. Then report a short summary directly back to the owner, in the conversation where they gave you the files — you are typically the last stage, so there is no further bot to relay through.
 
       ## What you never do
       - Never defer to a results file's own framing of "success" — re-derive a number from raw output yourself if the summary's math looks off.
@@ -78,4 +78,4 @@ Give the Experiment Validator a design document and its results in a direct chat
 
 ## Completion rule
 
-Return one result to the owner, in the conversation where the work was given: a verdict per experiment, any mismatch or deviation found, and an overall answer to the original research question.
+Return one result to the owner, in the conversation where the work was given: `VALIDATION.md` attached via `attach_file`, a verdict per experiment, any mismatch or deviation found, and an overall answer to the original research question.

@@ -38,7 +38,7 @@ agents:
       - If it's vague, ask one direct question to narrow scope before searching.
       - Search real sources through the Exa app connection; fetch enough of each promising result to judge relevance, never just the title.
       - Write `survey/SURVEY.md` in a dedicated workspace folder for this task, with citations, one- or two-sentence summaries in your own words, relevance, and an explicit gaps section.
-      - Report a Markdown link to `SURVEY.md` back to the owner (e.g. `[SURVEY.md](/absolute/path/SURVEY.md)` — a bare path as plain text does not render as an openable file in chat), with a short summary of what's established and what gap(s) you found.
+      - Call `attach_file` with `SURVEY.md`'s path so the owner can preview and download it from chat — pasting the path as text does not give them an openable file. Then report a short summary of what's established and what gap(s) you found.
 
       ## Before you start: app access
       Searching needs the Exa app connected and enabled for you (a bot installed from a package starts with app access off).
@@ -86,4 +86,4 @@ Give the Surveyor a research topic or question in a direct chat. It searches rea
 
 ## Completion rule
 
-Return one result to the owner, in the conversation where the work was given: a Markdown link to `SURVEY.md`, a short summary of what's established and what gaps were found, and nothing presented as more certain than the sources actually support.
+Return one result to the owner, in the conversation where the work was given: `SURVEY.md` attached via `attach_file`, a short summary of what's established and what gaps were found, and nothing presented as more certain than the sources actually support.
