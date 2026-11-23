@@ -1,44 +1,133 @@
 ---
 name: survey-literature
-title: Survey related literature for a research topic
-description: Search for papers, articles and prior work related to a given research topic using the Exa app connection, synthesize it by theme with a source matrix, compile a cited survey document with explicit gaps, and hand it to the Experiment Designer.
-triggers: survey literature, find related papers, literature review
-tags: research, survey, internal
+title: Survey the literature and check novelty
+description: Survey a field or check an idea's novelty from papers that were searched, verified against registries and read in full, and hand back SURVEY.md with located numbers, testable gaps and a brief the Experiment Designer can use directly.
+triggers: survey, literature, papers, related papers, survey literature, literature review, find related papers, related work, survey a field, has this been done, is my idea novel, novelty check, check my references, verify citations, summarise this paper, map the field, state of the art
+tags: research, survey, literature, novelty
 license: Unspecified
 author: QACI Duo
 ---
 
-# Survey related literature for a research topic
+# Survey the literature and check novelty
 
-You are the Surveyor, a standalone Digital Worker. The owner gives you a research topic or question (a sentence, a paper link, a rough idea). Your job is to find what already exists on it — real, verifiable sources, not invented ones — and hand back a survey the owner can bring to a separate Experiment Designer worker, if they choose to.
+Runs a literature request as a short chain of skills that hand off through files, so every paper in `SURVEY.md` was found by a search, verified against a registry and, where it matters, actually read. The result is for a researcher who needs to know where the field stands, whether their idea is new, and what an experiment would have to beat.
+
+## When to use
+
+- Survey a field or write related work; "has anyone done X?"; check a reference list; summarise one paper.
+- **Not for:** designing the experiments themselves (the separate Experiment Designer worker, `design-experiments`), running them, or writing the paper.
+
+## Inputs
+
+Ask once, all questions together, before searching. When nobody can answer (one-shot run), state the assumption and continue.
+
+| Input | Required | Default |
+|---|---|---|
+| Research question or topic | yes | — |
+| The owner's idea, if any (2–5 sentences) | no | survey only, no novelty verdict |
+| Scope: subfield, years, venues, languages | no | last 5 years, all venues |
+| Reference list to check | only for a reference check | — |
 
 ## Before you start: app access
 
-Surveying needs the **Exa** app connected and enabled for you (bot installed from a package starts with app access off).
-- No app tools at all in your turn: tell the owner in one sentence "Need app access turned on for me (Settings of this bot → Apps) and Exa connected", then end the turn.
+Searching needs the **Exa** app connected and enabled for you (a bot installed from a package starts with app access off).
+- No app tools at all in your turn: tell the owner in one sentence that app access needs to be turned on (Settings of this bot → Apps) and Exa connected, then end the turn.
 - App tools present but Exa not connected: send a **Connect Exa** card, one sentence on why, then end the turn.
-- Search for the actual tool names before calling them (e.g. `EXA_SEARCH`); never guess a tool name or its parameters.
+- Load the tools once: tool search for `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL`, call `COMPOSIO_SEARCH_TOOLS` once for the toolkits below, then execute their tools through `COMPOSIO_MULTI_EXECUTE_TOOL`, batching calls. Never guess a tool name or its parameters.
 
-## Steps
+| Need | Tool |
+|---|---|
+| Find papers | `EXA_SEARCH` with `category: "research paper"`; for security and systems topics add queries with `includeDomains: ["usenix.org", "ndss-symposium.org", "dl.acm.org", "ieeexplore.ieee.org"]` (top security venues are often not on arXiv) |
+| Official code of a method | `EXA_SEARCH` with `category: "github"` and the method name |
+| Full text of a non-arXiv paper | `EXA_GET_CONTENTS_ACTION`, one URL per call |
+| What a repository really does (recipe, data, hyperparameters, compute), optional | `DEEPWIKI_MCP_ASK_WIKI_QUESTION` with the repo `owner/name` |
+| Facts about a CVE (affected versions, CWE, known exploited), optional | `CVE_NOW_MCP_GET_VULNERABILITY` |
 
-1. **Clarify scope.** If the owner's topic is vague ("something about attention mechanisms"), ask one direct question to narrow it (domain, time range, what counts as "related") before searching — don't burn search calls guessing.
-2. **Search.** Use the Exa search tool with a handful of well-chosen queries (don't spam dozens of near-duplicate queries). For each promising result, fetch enough of the actual content to judge relevance — never judge a paper by its title alone.
-3. **Filter for relevance and credibility.** Prefer primary sources (the paper itself, an official repo, a standards doc) over blog posts summarizing them. Note when a source is a preprint, not yet peer-reviewed, or clearly promotional.
-4. **Build a synthesis matrix before writing prose.** One row per source, same columns every time: claim/finding, method or population (what kind of evidence this actually is — a benchmark result, a case study, an opinion piece), and limitation. Laying every source out in identical columns is what makes agreement, conflict, and missing evidence visible — don't skip straight to writing summaries source-by-source, or patterns across sources stay invisible even to you.
-5. **Write `survey/SURVEY.md`** in a dedicated workspace folder for this research task (`sharedBotFolder/research/<topic-slug>/survey/SURVEY.md`, absolute path you give on every handoff), organized **by theme or sub-question, not by source** — group sources around the concepts they actually address, the same way the matrix grouped them, so the document reads as a synthesis, not a reference list. For each source you cite, somewhere in the document:
-   - Title, authors (if known), link, and publication venue/date when available.
-   - A one- or two-sentence summary of what it actually found or claims — in your own words, checked against the content you fetched, not copied verbatim.
-   - Why it's relevant to the owner's topic.
-   Beyond the per-source facts, the document must also:
-   - **Reconcile contradictions explicitly, never just list both sides.** When two sources disagree, say what's actually different about them (population, method, scale) that could explain the disagreement, or say plainly that it's an unresolved conflict — don't present opposing findings side by side and move on, that quietly hides the disagreement from the reader.
-   - **Call out imbalance as a finding**, not just as an artifact of what you happened to find — if one sub-question has ten sources and an adjacent one has zero, that asymmetry itself is worth a sentence; it often means the zero-source side is where the real gap is.
-   - **Flag concepts that get cited or assumed constantly but were never actually tested directly** in anything you read — these "everyone assumes X" claims are a distinct kind of gap from "nobody has tried Y," and the Experiment Designer should be able to tell them apart.
-   - One section explicitly separating **what the sources establish** from **gaps** (open questions, contradictory findings left unresolved, things nobody seems to have tried, assumed-but-untested concepts) — this gap list is what the Experiment Designer will build on, so it needs to name the gap precisely, not just "more research is needed."
-6. **Never fabricate a citation.** A source you could not actually verify (dead link, paywall you can't see past, content that doesn't match the claim) does not go in the survey as fact — list it separately as "unverified" with the reason, or leave it out.
-7. **Call `attach_file` with `SURVEY.md`'s path** so the owner can preview and download it from chat — pasting the path as text does not give them an openable file. Then **report back to the owner**, in the conversation where they gave you the topic: a short summary of what's established and what gap(s) you found, and a note that this survey is ready to bring to a separate Experiment Designer worker if the owner wants to go further (the absolute path is for that next worker, not for the owner's own copy). You are a standalone worker — you do not hand off to another bot yourself, and you do not wait for anything to come back.
+If a tool is missing or fails, say so in the search log and use the next source; never fill the gap from memory.
 
-## General rules
+## Procedure
 
-- Reply to the owner in English, concisely.
-- Every claim in `SURVEY.md` traces to a source you actually fetched and read — not a title, not a memory, not an assumption about what a well-known paper "probably" says.
-- End a turn with `NEEDS INPUT:` only when you genuinely need the owner's answer before continuing.
+At every step, **open that skill first: read its SKILL.md (the exact path is in your Imported skills list)** and follow it exactly, including its *Check* and *Next* lines. The tested helper scripts (`verify.py`, `paper_text.py`) exist only inside the skills: save them as written. Writing your own verifier or fetcher, or answering from search snippets, skips the checks and is the main cause of wrong citations and unlocated numbers.
+
+| Skill | Job |
+|---|---|
+| `find-papers` | query plan → search → dedup → screen → `shortlist.jsonl`, `search_log.md` |
+| `verify-citations` | resolve every paper against arXiv / CrossRef → `verified.jsonl` |
+| `read-paper` | fetch full texts, close-read a batch of papers into `cards/<key>.md` |
+| `map-field` | approaches, numbers to beat, protocol, gaps → `field_map.md`, `benchmarks.jsonl`, `design_brief.md` |
+| `check-novelty` | idea vs closest work → `novelty.md` |
+
+All working files live in `research/<topic-slug>/` (slug = 2–4 words from the topic) in the shared bot folder. Reuse files that already exist there.
+
+1. **Pick the route.**
+
+   | The owner wants… | Run, in order |
+   |---|---|
+   | Survey a field / related work | find-papers → verify-citations → read-paper (top 6–8, **required**) → map-field (**required**) |
+   | "Has anyone done X?" | find-papers (narrow) → verify-citations → read-paper (closest 4–5, **required**) → map-field (so the design brief exists) → check-novelty |
+   | Survey **and** novelty | the survey route including map-field (**required**), then check-novelty reusing the cards |
+   | Check my reference list | verify-citations only, with `claimed_venue`/`claimed_year`; answer per entry: exists?, authors/year/venue correct?, suggested fix |
+   | Summarise this paper | verify-citations (for the peer-reviewed venue) → read-paper on the full text → a full summary: what it measures and how, data/benchmark construction with counts, every main table's headline numbers (Table N), the analyses and ablations, stated limitations, and what a reader should be careful about |
+
+2. **Stop and ask** after find-papers when the field is broad (show the query plan and scope), and when fewer than 10 relevant papers survive screening (say so and propose widening).
+3. **Read gate.** Run `grep -l "depth: full-text" research/<topic-slug>/cards/*.md | wc -l`. A survey needs at least 6 full-text cards and a novelty check at least 4; if there are fewer, run read-paper on the next papers now.
+   *Check:* this is the most common way an answer goes wrong — numbers quoted from abstracts or memory.
+4. **Final gate.** Run `ls research/<topic-slug>/`. For a survey or "has this been done" request, `cards/`, `benchmarks.jsonl` and `design_brief.md` must exist, and `novelty.md` too when the owner has an idea. If one is missing, run the skill that writes it now — the Experiment Designer starts from these files.
+5. **Write `research/<topic-slug>/survey/SURVEY.md`** in the Output layout below, organised by approach and sub-question, not source by source. Beyond the tables:
+   - **Reconcile contradictions** explicitly: when two papers disagree, say what differs (data, scale, protocol) that could explain it, or say plainly it is unresolved.
+   - **Call out imbalance** as a finding: a sub-question with many papers next to one with none is often where the real gap is.
+   - **Flag assumed-but-untested claims** (cited constantly, never tested directly) separately from "nobody has tried Y".
+6. **Deliver.** Call `attach_file` with `SURVEY.md`'s path, then reply in chat with the three-sentence summary, the numbers to beat and the "To re-check" list, and the absolute path of `research/<topic-slug>/` for the Experiment Designer.
+
+**Pace.** Batch work: several Exa queries per `COMPOSIO_MULTI_EXECUTE_TOOL` call, one helper run for all verifications, one for all full texts. Never `sleep` to wait out a rate limit; mark the item and move on. Run helpers in the foreground, never as background tasks: a background task that finishes after your answer replaces it. If a command is moved to the background anyway (timeout), wait for it in the foreground (poll its output file) and use its result before writing the answer; never end your turn while a task you started is still running.
+
+## Output
+
+`SURVEY.md`:
+
+```markdown
+## <topic>
+<Three sentences: main approaches, best current results, biggest gap or the novelty verdict.>
+
+### Approaches
+| Approach | Core idea | Representative papers | Strength | Known limitation |
+
+### Key papers, close-read
+- **<resolved title>** (<venue year>, <link>) — problem, method, headline result (Table X), stated limitation (Sec. Y).   ← one entry per card
+
+### Standard baselines and benchmarks
+### Where the evidence agrees, conflicts, or is missing   (contradictions reconciled, imbalance, assumed-but-untested claims)
+### Open problems   (each with evidence: paper, location)
+### Overlap with your idea   (verdict, closest paper, same / different on problem, method, data, evaluation)
+### Handoff to experiment design
+Numbers to beat (benchmark, metric, method, value, source with location), the standard protocol, and 2–4 testable gaps, each with the experiment that would close it. Same content as `design_brief.md`; the files are in `<absolute path of research/<topic-slug>/>`.
+### Search trail   found N → deduplicated N → screened N → verified N → read N; queries in search_log.md
+### To re-check
+### Files
+```
+
+## Quality checklist
+
+- [ ] Every paper in `SURVEY.md` is VERIFIED in `verified.jsonl`, with the resolved title, authors, year and venue.
+- [ ] Every number carries its location — (Table N), (Fig. N), (Sec. N) or (abstract) — and comes from a card.
+- [ ] The read gate passed: at least 6 full-text cards for a survey, 4 for a novelty check.
+- [ ] `design_brief.md` and `benchmarks.jsonl` exist, and the Handoff section matches them.
+- [ ] The search trail shows the counts; SUSPICIOUS papers are under "To re-check".
+
+## Guardrails
+
+**Never**
+- Cite a paper that is not VERIFIED in `verified.jsonl`; NOT FOUND papers are dropped and listed.
+- Type a title, author, number or DOI from memory; it must come from a file produced in this run.
+- Conclude "no overlap" from a thin search: the verdict is then "insufficient search".
+- Hand the result to another bot yourself, or make the research decision for the owner.
+- Ask for passwords or tokens in chat, or accept identifiable patient data.
+
+**Ask first**
+- Widening the scope beyond what the owner gave, when fewer than 10 relevant papers survive.
+
+## Example
+
+**Request:** "Has anyone trained a verifier on execution traces to rerank SWE-bench patches? Survey the area too."
+
+**Response outline:** `SURVEY.md` attached. Three sentences (four agent families; best verified resolve rate with its table; verdict *differentiate*: trajectory-text verifiers exist, trace-based ones compared head-to-head do not). Approaches table; 7 close-read papers with located numbers; a conflicts section (leaderboard scores drop once tests are strengthened); overlap table against the 4 closest papers; handoff with numbers to beat and 3 testable gaps; search trail 112 → 74 → 41 → 38 → 8; "To re-check" with one SUSPICIOUS entry.
