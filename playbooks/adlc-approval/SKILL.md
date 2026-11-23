@@ -1,101 +1,179 @@
 ---
 name: adlc-approval
-title: Duyệt ở 4 điểm của luồng ADLC
-description: Tự duyệt hay xin chủ duyệt bằng card ở SPEC/plan/push/merge theo dòng Điểm duyệt. Dùng ở mỗi điểm duyệt.
-triggers: adlc approval, duyệt ở 4 điểm của luồng adlc
+title: Approval at the four ADLC approval points
+description: Decide whether to self-approve or ask the owner with an approval card at SPEC, plan, push and merge, based on the Approval points line; use at every approval point.
+triggers: adlc approval, approval points, approval card, ask owner to approve, self-approve, duyệt ở 4 điểm của luồng adlc
 tags: adlc-craft, internal
 license: Unspecified
 author: QACI Duo
 ---
 
-# Duyệt ở 4 điểm của luồng ADLC
+# Approval at the four ADLC approval points
 
-Skill git và **nhánh gốc** của bạn ghi trong mục Môi trường của hướng dẫn hệ thống: `adlc-git-local` (demo cục bộ, nhánh gốc `main`) hoặc `adlc-git-azure` (Azure Repos, vd nhánh gốc `dev`). Dưới đây "nhánh gốc" là nhánh đó. Trên Azure, bước "merge" của Tech Lead là vote approve PR rồi chờ người thật hoàn tất PR trên Azure, và "Mở PR" của engineer là PR thật (skill `adlc-git-azure`).
+The process skills (`adlc-feature`, `adlc-bugfix`, `adlc-research`, `adlc-chore`, `adlc-paper-prototype`) say "ask for approval with the SPEC approval / Plan approval / Push approval / Merge approval card" at the exact place an approval is needed. This skill decides **whether a card is actually sent there**: depending on the setting below, it is not always sent. Every other step of the process skill (writing the SPEC, planning, review, running tests yourself, merging, reporting, …) is still done in full as that skill describes.
 
-Các skill quy trình (`adlc-feature`, `adlc-bugfix`, `adlc-research`, `adlc-chore`, `adlc-paper-prototype`) viết "xin duyệt bằng card Duyệt SPEC/plan/push/merge" ở đúng chỗ cần duyệt. Skill này nói **có thật sự gửi card ở đó không**: theo cài đặt dưới đây, không phải lúc nào cũng gửi. Mọi bước khác của skill quy trình (viết SPEC, lập plan, review, tự chạy test, merge, báo cáo…) vẫn làm đủ như skill đó mô tả.
+Git follows `adlc-git-local`: the **base branch** is `main` unless the assignment names another one. A "PR" is a work branch you merge yourself. Publishing to the owner's GitHub or Azure DevOps happens only after the merge, through `deploy-github` / `deploy-azure-devops`.
 
-## 4 điểm duyệt
+## When to use
 
-| Tên điểm | Vai trò | Lúc nào | Chủ duyệt cái gì |
+- At each of the four approval points in any ADLC process skill: SPEC, plan, push, merge.
+- Whenever you need the owner to decide something (choose an option, pick several items, answer a free-form question).
+- Before any destructive or external action (these always need a card).
+
+**Not for:** classifying work (`adlc-triage`), writing the progress log or Completion report (`adlc-report`), publishing or deploying (`deploy-github`, `deploy-azure-devops`, `deploy-render`), the UI preview itself (`adlc-ui-preview`).
+
+## Inputs
+
+| Input | Required | Default |
+|---|---|---|
+| The `Approval points:` line in the team brief (Shared section context) | No | Missing line = auto |
+| The approval point being reached (`spec`, `plan`, `push`, `merge`) | Yes | — |
+| Work type and size (from `adlc-triage`) | Yes | — |
+| Explicit owner instructions in this conversation (e.g. "show me before merging", "just do it, don't ask" for this task) | No | None |
+| Branch name and base branch (for push and merge) | For push/merge | Base branch `main` |
+
+## The four approval points
+
+| Point | Phase | When | What the owner approves |
 |---|---|---|---|
-| `spec` | PM | Trước khi giao Tech Lead | SPEC (feature), báo lỗi (bugfix), đề bài (research), mô tả việc lớn (chore), paper brief (paper-prototype) |
-| `plan` | Tech Lead | Sau khi có test plan và implementation plan, **trước khi chia việc**. **Việc nhỏ thì không cần card này** (skill `adlc-feature`, mục Việc nhỏ). | Plan: các phần, ai làm, nhánh, test case |
-| `push` | Engineer | Đã commit và chạy test, **trước khi push hoặc báo Tech Lead "đã mở PR"** | Nhánh, danh sách commit, tóm tắt diff, test đã chạy |
-| `merge` | Tech Lead | Review đạt và test xanh, **trước khi merge vào nhánh gốc** | Nhánh sắp merge, kết quả review và test |
+| `spec` | Specify | Before planning starts | The SPEC (feature), bug report (bugfix), research brief (research), description of a large chore (chore), paper brief (paper-prototype) |
+| `plan` | Plan | After the test plan and implementation plan exist, **before implementation starts**. **Not needed for a Small task** (`adlc-feature`, section "Small task"), except for paper-prototype (see below). | The plan: parts, branches, test cases |
+| `push` | Implement | Commits made and tests run, **before the branch is marked ready for review** | Branch, commit list, diff summary, tests run |
+| `merge` | Merge | Review passed and tests green, **before merging into the base branch** | The branch about to be merged, review and test results |
 
-Card "Xác nhận lỗi" (Tech Lead, bước 0 của skill `adlc-bugfix`, lỗi tự động gửi tới) **không nằm trong 4 điểm trên và luôn phải hỏi**, bất kể cài đặt dưới đây: một cảnh báo tự động chưa ai xác nhận là bug thật thì không được tự ý coi là đã duyệt.
+The **Bug confirmation** card (step 0 of `adlc-bugfix`, for a bug reported automatically) is **not one of the four points and is always asked**, whatever the setting below: an automatic alert nobody has confirmed as a real bug must never be treated as approved.
 
-## Cài đặt: tự động hay hỏi chủ
+## Approval point setting: auto or ask owner
 
-Đọc dòng bắt đầu bằng `Điểm duyệt:` trong khối **Shared section context** ở đầu hướng dẫn hệ thống của bạn (chủ hoặc admin sửa khối này trên app; có hiệu lực ngay từ lượt sau, không cần cài lại team). **Không có dòng này thì coi như tự động** — đây là mặc định của team.
+Read the line that starts with `Approval points:` in the **Shared section context** block at the top of your system instructions (the owner or an admin edits it in the app; it takes effect from the next turn, no reinstall needed). Also accept the legacy Vietnamese form `Điểm duyệt:` used by already-installed teams. **No line at all = auto** — this is the team default.
 
-- **`Điểm duyệt: tự động`** (hoặc thiếu dòng): **không gửi card** ở 4 điểm trên. Tự duyệt và làm tiếp ngay, nhưng **bắt buộc ghi lại mỗi lần tự duyệt**:
-  - vào nhật ký tiến độ (skill `adlc-report`), ngay lúc tự duyệt: giờ, tên điểm (vd "Duyệt merge"), lý do đạt, bằng chứng;
-  - vào báo cáo cuối: thêm một dòng hoặc mục "Tự duyệt" liệt kê từng điểm đã tự duyệt, **cái gì** (tên điểm), **vì sao đạt** (vd "review đạt, test xanh, 12/12 test case"), **bằng chứng** (lệnh đã chạy, số test, đường dẫn diff hay evidence).
-- **`Điểm duyệt: hỏi chủ`**: hỏi **cả 4 điểm**, đúng như mô tả ở "Mẫu card Duyệt" bên dưới. Không ghi "tự duyệt" ở điểm nào.
-- **`Điểm duyệt: hỏi chủ khi <danh sách>`**: chỉ hỏi các điểm có tên trong danh sách (phân tách bằng dấu phẩy, mỗi tên là một trong `spec`, `plan`, `push`, `merge`); điểm không có tên thì tự động như trên (vẫn ghi lại). Vd `Điểm duyệt: hỏi chủ khi spec, merge` → hỏi Duyệt SPEC và Duyệt merge bằng card, tự duyệt Duyệt plan và Duyệt push (có ghi nhật ký).
-- Dòng ghi sai cú pháp hoặc có tên điểm lạ: hiểu đúng phần đọc được, bỏ qua phần còn lại, và nói một câu cho chủ biết bạn đang hiểu dòng này thế nào trong lần trả lời gần nhất — đừng tự suy diễn thêm hay dừng việc lại để hỏi.
+| Line (English) | Legacy form (also accepted) | Meaning |
+|---|---|---|
+| `Approval points: auto` (or no line) | `Điểm duyệt: tự động` | No card at any of the four points; self-approve and log it |
+| `Approval points: ask owner` | `Điểm duyệt: hỏi chủ` | Card at **all four** points; never write "self-approved" |
+| `Approval points: ask owner at <list>` | `Điểm duyệt: hỏi chủ khi <list>` | Card only at the listed points; the rest are auto (still logged) |
 
-**Luôn gửi card, bất kể dòng `Điểm duyệt:` ghi gì:**
-- Chủ **nói thẳng trong cuộc trò chuyện** là muốn duyệt điểm này hoặc việc này (vd "merge thì cho tôi xem trước", "từ giờ cứ hỏi tôi trước khi push"): không bao giờ bỏ một card chủ đã xin rõ, kể cả đang ở chế độ tự động hay điểm đó không có trong danh sách "hỏi chủ khi".
-- **Duyệt plan của việc `paper-prototype`**: plan của loại việc này chốt bộ dữ liệu, các điểm lệch so với paper và ngưỡng khớp, nên chủ phải xem trước khi engineer code, kể cả việc nhỏ. Chỉ bỏ card này khi chủ nói thẳng là khỏi hỏi cho việc đó.
-- **Hành động phá huỷ hoặc ra ngoài hệ thống**: force-push, xoá nhánh, push thẳng vào nhánh gốc của remote (bỏ qua PR/review), chi tiền, gửi email hoặc đăng bài ra ngoài. Những việc này luôn cần card trước khi làm, dù cài đặt đang ghi tự động cho mọi điểm — đây không phải một trong 4 điểm duyệt, mà là một giới hạn riêng, không tắt được bằng dòng `Điểm duyệt:`.
+- `<list>` is comma-separated, each item one of `spec`, `plan`, `push`, `merge`. Example: `Approval points: ask owner at spec, merge` → SPEC approval and Merge approval by card; Plan approval and Push approval self-approved (and logged).
+- **Auto**: do not send a card; self-approve and continue immediately, but **always record every self-approval**:
+  - in the progress log (`adlc-report`), at the moment of approval: time, point (e.g. "Merge approval"), why it passes, evidence;
+  - in the Completion report: a "Self-approved" line or section listing each point as `Self-approved: <point> — <reason> — <evidence>` (reason e.g. "review passed, tests green, 12/12 test cases"; evidence: commands run, test counts, path to the diff or evidence).
+- A malformed line or unknown point name: apply the part you can read, ignore the rest, and tell the owner in one sentence in your next reply how you are interpreting the line — do not guess further and do not stop work to ask.
 
-Chủ dặn riêng cho một task "cứ làm, khỏi hỏi" (luật theo từng task, không đổi cài đặt chung) vẫn áp dụng như trước và vẫn ghi vào nhật ký, không phụ thuộc dòng `Điểm duyệt:`.
+**Always send a card, whatever the `Approval points:` line says:**
+- The owner **said explicitly in the conversation** that they want to approve this point or this work (e.g. "show me before you merge", "from now on ask me before pushing"). Never skip a card the owner asked for, even in auto mode or when the point is not in the list.
+- **Plan approval for `paper-prototype` work**: that plan fixes the dataset, the deviations from the paper and the match thresholds, so the owner must see it before any code is written, even for small work. Skip it only if the owner explicitly says not to ask for that task.
+- **Destructive or external actions**: force-push, deleting a branch, pushing directly to the remote's base branch (bypassing PR/review), spending money, sending email or publishing externally, and every action that leaves the system (creating a repository, first push, pushing a branch to an existing repository, opening a pull request, switching to public, a release, an FCode Market listing, any Render deploy or redeploy, a public link). These are not approval points; they are a separate limit that the `Approval points:` line cannot turn off.
 
-## Luật chung (khi có hỏi)
+An owner instruction for one task ("just do it, don't ask") is a per-task rule, not a change to the setting; apply it and still log each self-approval.
 
-- Duyệt và quyết định luôn hỏi **chính chủ của bạn** (người sở hữu DW của bạn), bằng **công cụ hỏi người dùng** của bạn (tên thường là `ask_user` hoặc `request_user_input`). Công cụ này hiện thành card có nút trong chat của chủ.
-- **Không** xin duyệt bằng một câu chữ thường trong tin trả lời, và **không** nhờ DW khác duyệt thay chủ. Tin gửi qua `coordinate_bots` không tới tay người thật.
-- **Điểm duyệt phải hỏi chủ mà bạn đang làm việc do bot khác giao** (Tech Lead, engineer): nhiều khi hệ thống không cho bạn hỏi người (công cụ hỏi trả "Not asked…", hoặc hướng dẫn lượt ghi bot giao việc quyết). Khi đó **đừng tự duyệt và đừng dùng `NEEDS INPUT:`**: dừng phần cần duyệt, kết thúc lượt bằng báo cáo gửi người giao việc ghi rõ `CẦN CHỦ DUYỆT: <điểm>` kèm tóm tắt đủ để chủ quyết (như nội dung card) và đường dẫn tài liệu, rồi chờ. Chỉ làm tiếp khi nhận được tin giao việc ghi câu trả lời của chủ.
-- **PM nhận `CẦN CHỦ DUYỆT`** từ bot trong team: hỏi chủ bằng card (công cụ hỏi người dùng) **trong cuộc trò chuyện với chủ**, nguyên nội dung bot đó gửi, không thêm ý kiến duyệt của bạn. Chủ trả lời rồi thì giao lại đúng bot đó qua `coordinate_bots`: "Chủ trả lời điểm <điểm>: <nguyên văn câu trả lời>". Không bao giờ tự trả lời thay chủ.
-- Card duyệt bạn tự gửi được (công cụ hỏi chạy được) **luôn** gửi bằng công cụ hỏi người dùng, **không bao giờ** bằng dòng `NEEDS INPUT:`, và không ghi `Default:`. Trong việc do bot khác giao, câu hỏi `NEEDS INPUT:` được chuyển cho bot giao việc trả lời thay chủ (không ai trả lời thì tự lấy `Default:`), kể cả khi hệ thống dặn "đừng dừng lại hỏi người". Card của công cụ hỏi thì chỉ chủ trả lời được; lượt của bạn chờ tới khi chủ bấm.
-- Bot trong team có câu hỏi duyệt (SPEC, plan, push, merge, hay câu nào ghi "chủ duyệt"): **không bao giờ duyệt thay chủ**, kể cả khi hệ thống ghi là bạn trả lời.
-  - Hệ thống báo bot đó **đang chờ chủ trả lời card**: **không gửi gì vào luồng việc của bot đó** cho tới khi chủ trả lời, vì tin bạn gửi vào luồng sẽ được tính là câu trả lời của card. Chỉ báo chủ một dòng trong cuộc trò chuyện với chủ: card duyệt đang chờ ở bot nào.
-  - Câu hỏi duyệt đến bạn dạng `NEEDS INPUT:` (hệ thống ghi là bạn trả lời): trả lời ngay bot đó qua `coordinate_bots` "Đây là điểm duyệt của chủ, tôi không duyệt thay. Hỏi lại chủ bằng công cụ hỏi người dùng (card) và chờ chủ bấm.", rồi báo chủ. Phải trả lời như vậy, vì im lặng thì bot kia sẽ tự lấy `Default:`.
-- Mỗi vai trò chỉ xin duyệt **điểm của mình** (bảng trên). Các card Duyệt plan, Duyệt merge, Duyệt push đến chủ của Tech Lead và engineer, không đến chủ của PM: PM không báo trước hay hỏi chủ mình về các card đó. Tech Lead không xin PM duyệt plan hay merge; PM không xin duyệt merge thay Tech Lead; engineer không xin Tech Lead duyệt push.
-- Chỉ kết thúc tin bằng dòng `NEEDS INPUT:` khi **thật sự** có câu hỏi cần người trả lời. Không có câu hỏi thì không viết dòng đó (không bao giờ viết "NEEDS INPUT: không có"): dòng này luôn bật một card.
-- Hỏi xong thì **chờ câu trả lời**. Không tự coi im lặng là đồng ý, không làm tiếp phần cần duyệt.
+## Procedure
 
-## Mẫu card Duyệt
+1. Identify the approval point you reached and the work type. *Check:* it is one of `spec`, `plan`, `push`, `merge` (or a decision/always-card case above).
+2. Read the `Approval points:` line (or legacy `Điểm duyệt:` line) and decide: card or self-approve. Apply the always-card overrides. *Check:* Small task skips Plan approval except for paper-prototype.
+3. For push and merge, run the branch checks and prepare the diff (section "Push approval and Merge approval need the git diff") — **also when self-approving**.
+4. If a card is needed: send the full document (SPEC, plan) in a message just before the card, then send the card with the ask-user tool using the template below. Wait for the answer; do not continue the part that needs approval.
+5. If self-approving: record it in the progress log now and keep it for the Completion report, then continue.
+6. Handle the answer (section "Handling the answer") and log it.
 
-Một câu hỏi, gồm:
+## General rules for asking
 
-- **Tiêu đề ngắn** (header): vd "Duyệt SPEC", "Duyệt plan", "Duyệt merge", "Duyệt push".
-- **Nội dung câu hỏi**: tóm tắt đủ để chủ quyết mà không phải mở chỗ khác, tối đa khoảng 15 dòng: việc gì, phạm vi, con số chính, nhánh, kết quả test. Bản đầy đủ (SPEC, plan) thì gửi trong tin nhắn ngay trước card.
-- **Hai lựa chọn**, mỗi lựa chọn có mô tả việc sẽ xảy ra:
-  - `Đồng ý`: vd "Giao Tech Lead ngay", "Merge vào nhánh gốc", "Push và báo Tech Lead".
-  - `Yêu cầu sửa`: "Ghi điều cần sửa ở ô trả lời".
-- Luôn để ô trả lời tự do.
+- Approvals and decisions always go to **the owner** through **the ask-user tool** (usually named `ask_user` or `request_user_input`). It shows as a card with buttons in the owner's chat.
+- **Never** ask for approval in a plain sentence in a reply, and never ask anyone or anything other than the owner to approve. A subagent never approves on your behalf.
+- An approval card is **always** sent with the ask-user tool, **never** with a `NEEDS INPUT:` line, and never with a `Default:`. Only the owner can answer the card; your turn waits until they click.
+- End a message with a `NEEDS INPUT:` line only when there is **genuinely** a question for the owner. If there is none, do not write the line (never "NEEDS INPUT: none"): the line always triggers a card.
+- After asking, **wait for the answer**. Silence is not consent; do not continue the part that needs approval.
 
-## Card Duyệt push và Duyệt merge phải kèm git diff
+## Approval card template
 
-Chủ chỉ duyệt được khi thấy code. Ngay **trước** card:
+One question, containing:
 
-0. **Kiểm nhánh đã commit đủ**, chạy trong worktree của nhánh. Sai điều nào thì sửa trước, chưa gửi card:
-   - `git status --short` không có dòng nào: mọi thay đổi đã commit, không còn file `M` hay `??` thuộc việc này.
-   - `git log --oneline <nhánh gốc>..<nhánh>` có ít nhất một commit. Duyệt push là duyệt **commit đã có**, không phải thay đổi sẽ commit sau.
-   - Mọi file mới (code, **test**, tài liệu) đều nằm trong commit: `git show --stat --format= <nhánh gốc>..<nhánh>`. File bị `.gitignore` bỏ qua (`git check-ignore -v <file>` có kết quả, vd repo bỏ qua `tests/*`) thì thêm bằng `git add -f <file>` và ghi điều này trong tin.
-   - Test bạn báo trong card chạy trên đúng commit đó (chạy lại sau khi commit nếu đã sửa thêm).
-1. Ghi toàn bộ diff ra file trong thư mục làm việc: `git diff <nhánh gốc>...<nhánh> > review-<nhánh>.diff.txt` (đổi `/` trong tên nhánh thành `-`). Duyệt merge: diff là đúng những gì sắp vào nhánh gốc.
-2. Đính kèm file bằng `attach_file`, rồi xoá file đó. Không commit file này.
-3. Gửi một tin ngắn: nhánh, các commit (`git log --oneline <nhánh gốc>..<nhánh>`) và `git diff --stat <nhánh gốc>...<nhánh>`. **Không** dán diff vào tin.
+- **Short header**: exactly `SPEC approval`, `Plan approval`, `Push approval` or `Merge approval`.
+- **Question body**: a summary sufficient to decide without opening anything else, at most about 15 lines: what the work is, scope, key numbers, branch, test results. The full version (SPEC, plan) goes in the message right before the card.
+- **Two options**, each with a description of what happens next:
+  - `Approve`: e.g. "Start planning now", "Start implementation", "Mark the branch ready for review", "Merge into the base branch".
+  - `Request changes`: "Write what to change in the reply box".
+- Always leave the free-text reply box open.
 
-Nội dung card ghi "Diff đầy đủ ở file đính kèm ngay trên". Đổi giao diện thì card Duyệt push còn kèm phần xem trước theo skill `adlc-ui-preview` (ảnh màn hình ngay trên, app đang mở trên desktop để chủ Take control thử).
+## Push approval and Merge approval need the git diff
 
-Điểm đang **tự duyệt** (không gửi card) cũng làm đủ bước 0 ở trên và ghi file diff đó vào nhật ký/evidence, để sau này xem lại được đúng diff đã tự duyệt.
+The owner can only approve what they can see. Right **before** the card:
 
-## Các dạng card khác
+0. **Check the branch is fully committed**, run in the branch's worktree. If anything fails, fix it first; do not send the card yet:
+   - `git status --short` prints nothing: every change is committed, no `M` or `??` files belonging to this work remain.
+   - `git log --oneline <base>..<branch>` shows at least one commit. Push approval approves **existing commits**, not changes to be committed later.
+   - Every new file (code, **tests**, docs) is in a commit: `git show --stat --format= <base>..<branch>`. A file ignored by `.gitignore` (`git check-ignore -v <file>` prints a match, e.g. the repo ignores `tests/*`) is added with `git add -f <file>`, and you say so in the message.
+   - The tests you report in the card ran on exactly that commit (re-run after committing if you changed anything).
+1. Write the whole diff to a file in the working directory: `git diff <base>...<branch> > review-<branch>.diff.txt` (replace `/` in the branch name with `-`). For Merge approval the diff is exactly what is about to enter the base branch.
+2. Attach the file with `attach_file`, then delete it. Never commit this file.
+3. Send one short message: the branch, its commits (`git log --oneline <base>..<branch>`) and `git diff --stat <base>...<branch>`. **Do not** paste the diff into the message.
 
-Dùng khi cần chủ quyết định, không phải để duyệt (các dạng này luôn hỏi, không theo cài đặt `Điểm duyệt:`):
+The card body says "Full diff in the attachment just above". For UI changes, the Push approval card also comes with the preview from `adlc-ui-preview` (screenshots just above, the app running on the desktop so the owner can Take control and try it).
 
-- **Chọn một phương án**: mỗi lựa chọn là một phương án, mô tả ghi ưu/nhược điểm ngắn. Vd chọn hướng triển khai, chọn khuyến nghị của research.
-- **Chọn nhiều**: bật chọn nhiều. Vd chọn những bug sửa trong đợt này.
-- **Hỏi tự do**: một câu hỏi không có lựa chọn, khi thiếu thông tin chỉ chủ biết.
-- **Nhiều câu trong một card**: khi cần làm rõ vài điểm cùng lúc, tối đa 3 câu.
+A point that is **self-approved** (no card) still runs step 0 above and records that diff file in the progress log/evidence, so the exact diff that was self-approved can be reviewed later.
 
-## Xử lý câu trả lời
+## Other card types
 
-- `Đồng ý`: làm tiếp đúng việc đã ghi trong lựa chọn.
-- `Yêu cầu sửa` hoặc trả lời tự do: làm theo, rồi **hỏi lại bằng card mới** với bản đã sửa. Không làm tiếp khi chưa có `Đồng ý`.
-- Ghi vào nhật ký: điểm duyệt, giờ hỏi, giờ trả lời, kết quả (hỏi chủ) hoặc lý do và bằng chứng (tự duyệt).
+Used when the owner must decide, not to approve (these are always asked, regardless of the `Approval points:` setting):
+
+- **Single choice**: each option is one alternative; its description gives short pros and cons. E.g. choosing an implementation approach, choosing a research recommendation.
+- **Multiple choice**: enable multi-select. E.g. choosing which bugs to fix in this round.
+- **Free-form question**: one question with no options, when information only the owner has is missing.
+- **Several questions in one card**: when several points need clarifying at once, at most 3 questions.
+
+## Handling the answer
+
+- `Approve`: continue with exactly what the option described.
+- `Request changes` or a free-text answer: apply it, then **ask again with a new card** showing the revised version. Do not continue without an `Approve`.
+- Log it in the progress log: the point, time asked, time answered, result (owner asked) — or reason and evidence (self-approved).
+
+## Output
+
+Either a card (ask-user tool) or a self-approval log entry.
+
+Card:
+```
+Header: <SPEC approval | Plan approval | Push approval | Merge approval>
+Question: <work> — <scope> — <key numbers> — branch <branch> — tests <passed>/<total>. Full diff in the attachment just above. (≤ ~15 lines)
+Options:
+- Approve — <what happens next>
+- Request changes — Write what to change in the reply box
+```
+
+Self-approval (progress log row and Completion report line):
+```
+Self-approved: <point> — <reason> — <evidence: commands, test counts, diff/evidence path>
+```
+
+## Quality checklist
+
+- [ ] Read the `Approval points:` line (or legacy `Điểm duyệt:`); missing line treated as auto.
+- [ ] Always-card overrides applied (owner request, paper-prototype plan, destructive/external actions, Bug confirmation).
+- [ ] For push/merge: clean `git status`, commits exist, new files committed, tests ran on that commit, diff attached and deleted.
+- [ ] Card header is exactly one of the four titles; body ≤ ~15 lines; two options with descriptions; free-text box open.
+- [ ] No `NEEDS INPUT:` used for an approval; no `Default:` on an approval card.
+- [ ] Every self-approval logged in the progress log and listed in the Completion report.
+
+## Guardrails
+
+**Never**
+- Never treat silence as approval or continue the approved part before `Approve`.
+- Never ask for approval in plain text or with a `NEEDS INPUT:` line.
+- Never let a subagent or anything other than the owner approve.
+- Never skip a card the owner explicitly asked for.
+- Never commit the review diff file.
+
+**Ask first** (always a card, even in auto mode)
+- Force-push, deleting a branch, pushing directly to the remote's base branch.
+- Spending money, sending email, publishing externally, creating a repository, first push, switching to public, a release, an FCode Market listing, any Render deploy or redeploy, a public link.
+- Plan approval for paper-prototype work; Bug confirmation for an automatic bug report.
+
+## Example
+
+**Request:** The team brief says `Approval points: ask owner at merge`. A feature branch `feature/export-filter-api` has passed review and tests.
+
+**Response outline:**
+1. Plan approval and Push approval were already self-approved and logged: "Self-approved: Push approval — 3 commits, 14/14 tests pass on HEAD — review-feature-export-filter-api.diff.txt".
+2. Now at merge: `git status --short` empty, commits listed, diff written, attached with `attach_file`, deleted.
+3. Short message with the commit list and `git diff --stat main...feature/export-filter-api`.
+4. Card "Merge approval": the feature, 14/14 tests, 6/6 test cases Pass, "Full diff in the attachment just above"; options Approve — "Merge into main", Request changes.
+5. Wait; on Approve, merge and log the time asked, time answered and result.

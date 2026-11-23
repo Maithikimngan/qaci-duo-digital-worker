@@ -1,50 +1,104 @@
 ---
 name: adlc-triage
-title: Phân loại task (PM)
-description: PM phân loại việc chủ giao (feature, bugfix, research, chore, paper-prototype) và mở đúng skill.
-triggers: adlc triage, phân loại task
+title: Classify the task
+description: Classify work the owner assigns (feature, bugfix, research, chore, paper-prototype), judge whether it is a Small task, and open the matching process skill.
+triggers: adlc triage, classify task, what kind of work is this, new task, phân loại task
 tags: adlc-craft, internal
 license: Unspecified
 author: QACI Duo
 ---
 
-# Phân loại task (PM)
+# Classify the task
 
-## Các loại việc
+The first step of every piece of work the owner assigns (`/dw` = the owner assigns work): decide the work type and size, tell the owner, then run the matching process skill yourself from Specify through Report.
 
-| Loại | Dấu hiệu | Skill quy trình |
+## When to use
+
+- Every new piece of work the owner assigns in the direct chat.
+- When a follow-up turns out to be a separate piece of work.
+
+**Not for:** the process itself (`adlc-feature`, `adlc-bugfix`, `adlc-research`, `adlc-chore`, `adlc-paper-prototype`), approvals (`adlc-approval`), reporting (`adlc-report`).
+
+## Inputs
+
+| Input | Required | Default |
 |---|---|---|
-| **feature** | Thêm khả năng mới, màn hình mới, hành vi mới mà trước giờ chưa có | `adlc-feature` |
-| **bugfix** | Hệ thống đang làm **sai** so với hành vi mong đợi hoặc đã từng đúng; có (hoặc tìm được) cách tái hiện | `adlc-bugfix` |
-| **research** | Câu hỏi cần trả lời trước khi quyết: so sánh phương án, khảo sát, thử nghiệm khả thi. Kết quả là **khuyến nghị**, không phải code sản phẩm | `adlc-research` |
-| **chore** | Việc bảo trì **không đổi hành vi**: refactor, nâng phiên bản thư viện, dọn code, tài liệu, sửa test chập chờn | `adlc-chore` |
-| **paper-prototype** | Chủ đưa một **paper nghiên cứu** (link arXiv/URL, file PDF đính kèm, hoặc paper tìm qua công cụ QACI Data khi đã kết nối) và muốn có một **prototype chạy được**, tái hiện phương pháp cốt lõi của paper ở quy mô nhỏ | `adlc-paper-prototype` |
+| The owner's request | Yes | — |
+| Repository and base branch | Yes | Ask the owner if missing. A GitHub URL (`https://github.com/<owner>/<repo>`) means repository mode **GitHub**: use `adlc-git-remote` instead of the local merge |
+| Reproduction steps (bugfix) | For bugfix | Ask the owner |
+| Paper link / attached PDF / QACI Data search (paper-prototype) | For paper-prototype | Ask the owner |
 
-## Việc nhỏ
+## Work types
 
-Ngoài loại việc, đánh giá cỡ. **Việc nhỏ** là khi đủ cả ba điều kiện:
-- một repo;
-- đổi một vùng rõ ràng (một module, vài endpoint, một màn hình, một cấu hình);
-- không đổi kiến trúc hay dữ liệu dùng chung, và một engineer làm xong trong một phiên.
+| Type | Signals | Process skill |
+|---|---|---|
+| **feature** | A new capability, screen or behavior that did not exist before | `adlc-feature` |
+| **bugfix** | The system behaves **wrongly** compared with expected or previously correct behavior; there is (or you can find) a way to reproduce it | `adlc-bugfix` |
+| **research** | A question to answer before deciding: comparing options, a survey, a feasibility experiment. The result is a **recommendation**, not product code | `adlc-research` |
+| **chore** | Maintenance that **does not change behavior**: refactoring, dependency upgrades, cleanup, docs, fixing flaky tests | `adlc-chore` |
+| **paper-prototype** | The owner provides a **research paper** (arXiv link/URL, attached PDF, or a paper found through the QACI Data tools when connected) and wants a **working prototype** reproducing the paper's core method at small scale | `adlc-paper-prototype` |
 
-Ví dụ: thêm một API, ghi log ra file, thêm một bộ lọc, sửa một lỗi có bước tái hiện. `paper-prototype` không dùng cỡ "việc nhỏ": luôn theo đủ các bước của skill `adlc-paper-prototype`.
+## Small task
 
-Việc nhỏ thì:
-- SPEC ngắn: mục tiêu, yêu cầu, AC, ngoài phạm vi; tối đa khoảng 1 trang;
-- ghi ở đầu tin giao Tech Lead: "Loại việc: feature. **Cỡ: việc nhỏ.** Quy trình: skill adlc-feature (mục Việc nhỏ)".
+Besides the type, judge the size. A **Small task** meets all three conditions:
+- one repository;
+- changes one clear area (one module, a few endpoints, one screen, one configuration);
+- no change to architecture or shared data, and it can be finished in one session.
 
-Không chắc thì coi là việc thường.
+Examples: add one API, write logs to a file, add a filter, fix a bug that has reproduction steps. `paper-prototype` never uses the Small task size: it always follows every step of `adlc-paper-prototype`.
 
-## Cách phân loại
+For a Small task:
+- the SPEC is short: goal, requirements, AC, out of scope; at most about one page;
+- record at the top of the progress log and plan: "Work type: feature. **Size: Small task.** Process: skill adlc-feature (section Small task)".
 
-1. Đọc task. Xác định người yêu cầu thật sự muốn **kết quả gì**.
-2. Chọn một loại theo bảng trên. Task trộn nhiều loại (vd sửa lỗi và thêm tính năng) thì:
-   - tách thành nhiều task nếu các phần độc lập;
-   - nếu không tách được, chọn loại chính và ghi rõ phần còn lại trong yêu cầu.
-3. Thiếu thông tin để phân loại hoặc để viết yêu cầu (vd báo lỗi không có cách tái hiện, không rõ repo, paper không có link/file rõ ràng) thì **hỏi lại người giao việc**, không đoán.
-4. Báo cho chủ: loại việc, lý do một câu, skill sẽ dùng. Rồi mở skill đó và làm theo phần của PM.
-5. Khi giao Tech Lead, **ghi rõ loại việc và skill** ở đầu tin giao việc, để cả đội dùng cùng một quy trình (vd "Loại việc: bugfix. Quy trình: skill adlc-bugfix.", hay "Loại việc: paper-prototype. Quy trình: skill adlc-paper-prototype.").
+When unsure, treat it as normal size.
 
-## Task không thuộc loại nào
+## Procedure
 
-Câu hỏi nhanh, việc hành chính, việc không cần code thì tự xử lý hoặc trả lời chủ trực tiếp, không mở luồng ADLC. Việc chủ giao cho PM (chat riêng với PM hoặc trong phòng team) và việc giao qua `coordinate_bots` thì vào ADLC: xem mục "Việc team và việc thường" trong hướng dẫn hệ thống của bạn.
+1. Read the task. Establish what **result** the owner actually wants.
+2. Pick one type from the table. For mixed work (e.g. a bugfix plus a feature):
+   - split into several tasks if the parts are independent;
+   - otherwise pick the main type and write the remaining part explicitly into the requirement.
+3. If information is missing to classify or to write the requirement (e.g. a bug report without reproduction steps, unclear repository, a paper without a clear link or file), **ask the owner**; do not guess.
+4. Judge the size (section Small task).
+5. Tell the owner: work type, a one-sentence reason, the skill you will use.
+6. If the request contains a GitHub repository link, record "Repository mode: GitHub (`adlc-git-remote`)" too; the process skill then clones, pushes a branch and opens a PR instead of merging locally.
+7. Record the type and skill at the top of the progress log (`adlc-report`) and the plan folder `sharedBotFolder/plans/<repo>-<task>/`, e.g. "Work type: bugfix. Process: skill adlc-bugfix." or "Work type: paper-prototype. Process: skill adlc-paper-prototype."
+8. Open that process skill and run it end to end yourself: Specify → Plan → Implement → Verify → Merge → Report. *Check:* reread the skill now; do not work from memory of a previous run.
+
+## Work that fits no type
+
+Quick questions, administrative work, and anything that needs no code change: answer the owner directly, without the ADLC flow. Requests to build, fix or refactor code, or to build a prototype, always go through ADLC, however small (see "Direct assignments" in your system instructions).
+
+## Output
+
+```
+Work type: <feature | bugfix | research | chore | paper-prototype>. Size: <Small task | normal>.
+Reason: <one sentence>.
+Process: skill <adlc-…>.
+done_when: <what "done" means>
+```
+
+## Quality checklist
+
+- [ ] Exactly one main type chosen; mixed work split or the remainder written into the requirement.
+- [ ] Size judged; paper-prototype never Small task.
+- [ ] Missing information asked of the owner, not guessed.
+- [ ] Type, reason and skill told to the owner and recorded in the progress log.
+- [ ] Goal, scope, repository, relevant files/branches and `done_when` stated.
+
+## Guardrails
+
+**Never**
+- Never guess a repository, base branch or reproduction steps.
+- Never mark paper-prototype work as a Small task.
+- Never skip the ADLC flow for a code change, however small.
+
+**Ask first**
+- When the request could reasonably be two types with different outcomes (e.g. "investigate and fix" with no reproduction).
+
+## Example
+
+**Request:** "The export button downloads an empty CSV when a filter is active. Fix it."
+
+**Response outline:** "Work type: bugfix. Size: Small task. Reason: existing export behaves wrongly under a filter and can be reproduced. Process: skill adlc-bugfix. done_when: export with an active filter contains the filtered rows." Then log it and run `adlc-bugfix`.

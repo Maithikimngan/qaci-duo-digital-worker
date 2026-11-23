@@ -1,43 +1,112 @@
 ---
 name: adlc-research
-title: "Quy trình: nghiên cứu"
-description: Quy trình nghiên cứu, so sánh phương án, khuyến nghị có bằng chứng. Dùng cho việc research.
-triggers: "adlc research, quy trình: nghiên cứu"
+title: "Process: research"
+description: "Research process run by one agent: research brief, fair measurement plan, spike branches, comparison with real numbers, and an evidence-backed recommendation committed to reports/."
+triggers: "adlc research, research, compare options, evaluate alternatives, spike, which approach is better, quy trình: nghiên cứu, nghiên cứu"
 tags: adlc-craft, internal
 license: Unspecified
 author: QACI Duo
 ---
 
-# Quy trình: nghiên cứu
+# Process: research
 
-Skill git và **nhánh gốc** của bạn ghi trong mục Môi trường của hướng dẫn hệ thống: `adlc-git-local` (demo cục bộ, nhánh gốc `main`) hoặc `adlc-git-azure` (Azure Repos, vd nhánh gốc `dev`). Dưới đây "nhánh gốc" là nhánh đó. Trên Azure, bước "merge" của Tech Lead là vote approve PR rồi chờ người thật hoàn tất PR trên Azure, và "Mở PR" của engineer là PR thật (skill `adlc-git-azure`).
+The result of research is **an evidence-backed recommendation**, not a feature. **Never merge experimental code into the base branch.** You run every phase yourself: Specify → Plan → Implement → Verify → Merge (report and measurement scripts only) → Report. Subagents (Task/Agent) may run independent directions in parallel; you keep the measurement plan and the comparison.
 
-Dùng kèm: `adlc-approval` (card duyệt), skill git của bạn (nhánh spike), `adlc-report` (nhật ký và báo cáo).
+Git and the **base branch** come from the assignment; spike branches and commits follow `adlc-git-local`.
 
-Kết quả của research là **một khuyến nghị có bằng chứng**, không phải tính năng. **Không merge code thử nghiệm vào nhánh gốc.**
+Used with: `adlc-approval`, `adlc-git-local`, `adlc-report`.
 
-## PM
+## When to use
 
-1. **Viết đề bài nghiên cứu** (thay cho SPEC):
-   - Câu hỏi cần trả lời, một câu.
-   - Vì sao cần biết, quyết định nào phụ thuộc vào câu trả lời.
-   - Các phương án đã biết (nếu có) và **tiêu chí so sánh** (độ chính xác, tốc độ, chi phí, độ phức tạp, ràng buộc offline…), có trọng số nếu được.
-   - Ràng buộc và giới hạn thời gian.
-   - Tiêu chí nghiệm thu: mỗi phương án có số liệu cho từng tiêu chí; có khuyến nghị kèm lý do; có rủi ro của khuyến nghị.
-2. Gửi đề bài cho chủ, rồi **xin duyệt bằng card "Duyệt đề bài"** (skill `adlc-approval`). Chủ chọn Đồng ý thì giao Tech Lead: "Loại việc: research. Quy trình: skill adlc-research", kèm đề bài và `done_when`: "báo cáo so sánh và khuyến nghị đã commit trong reports/, có số liệu".
-3. Kết quả của Tech Lead về: **mở lại skill `adlc-report` (phần PM)** rồi mới trả lời chủ. Gửi đủ 4 phần, chép nguyên văn mọi bảng của Tech Lead, tự kiểm đủ bảng trước khi gửi, và thêm phần **Quyết định cần chủ đưa ra**. Không gửi đoạn tóm tắt.
+- `adlc-triage` classified the work as **research**: a question whose answer decides what to build (which library, model, architecture, approach).
 
-## Tech Lead
+**Not for:** shipping the chosen option (`adlc-feature`, usually the follow-up), reproducing a paper as a prototype (`adlc-paper-prototype`), fixing defects (`adlc-bugfix`).
 
-1. Nhận đề bài, ghi nhật ký. Thêm phương án mà PM chưa nêu nếu thấy đáng thử.
-2. **Kế hoạch nghiên cứu**: mỗi phương án là một hướng, ghi cách đo từng tiêu chí, **dùng cùng một bộ dữ liệu thử và cùng cách đo** cho mọi phương án để so sánh công bằng.
-3. Chia hướng cho engineer (phần AI cho AI Engineer), mỗi người một nhánh `spike/<task>-<hướng>`, gửi cùng lúc. `done_when`: "số liệu cho từng tiêu chí, script đo chạy lại được, ghi chú ưu/nhược điểm, đã báo Lead".
-4. Review kết quả: số liệu có chạy lại được không, so sánh có cùng điều kiện không. Thiếu thì yêu cầu bổ sung với `rework: true`.
-5. Viết `reports/research-<task>.md`: câu hỏi, bảng so sánh phương án × tiêu chí (số liệu thật), khuyến nghị và lý do, rủi ro, việc tiếp theo nếu chọn khuyến nghị (thường là một task feature). Commit vào nhánh gốc; **chỉ commit báo cáo và script đo**, không merge code thử nghiệm.
-6. Báo cáo PM theo skill `adlc-report`. Mục Nghiệm thu dùng tiêu chí của đề bài; mục Chất lượng là bảng so sánh tóm tắt.
+## Inputs
 
-## Engineer
+| Input | Required | Default |
+|---|---|---|
+| The question, in one sentence | Yes | — |
+| Why it matters: which decision depends on it | Yes | — |
+| Known options | No | You propose options |
+| Comparison criteria (accuracy, speed, cost, complexity, offline constraint, …) with weights | Yes | Ask; weights equal if not given |
+| Constraints and time limit | No | Ask for a time limit |
+| Repository and base branch | Yes | From the assignment |
 
-1. Nhận một hướng nghiên cứu. Làm trên nhánh spike, code thử nghiệm được phép đơn giản, nhưng **script đo phải chạy lại được** và ghi rõ lệnh chạy.
-2. Đo đúng các tiêu chí, trên đúng bộ dữ liệu chung. Không chỉnh phương án của mình cho khớp tập đo.
-3. Báo Tech Lead: số liệu, cách đo, ưu/nhược điểm, điều bất ngờ. Rồi kết thúc lượt.
+## Procedure
+
+### Specify
+
+1. Open the progress log (`adlc-report`). **Write the research brief** (the SPEC for this work):
+   - the question, one sentence;
+   - why it matters and which decision depends on it;
+   - known options and **comparison criteria**, weighted if possible;
+   - constraints and time limit;
+   - acceptance criteria: every option has numbers for every criterion; a recommendation with reasons; the risks of the recommendation;
+   - `done_when`: "comparison and recommendation committed in reports/, with numbers".
+2. Send the brief to the owner, then pass the **SPEC approval** point (`adlc-approval`).
+
+### Plan
+
+3. Add options not yet listed if they are worth trying.
+4. **Research plan**: one direction per option, how each criterion is measured, and **the same test dataset and the same measurement method** for every option, for a fair comparison. Each direction gets a branch `spike/<task>-<direction>`. Pass the **Plan approval** point (`adlc-approval`).
+   *Check:* the dataset and the measurement command are identical across directions.
+
+### Implement
+
+5. Per direction, on its spike branch: experimental code may be simple, but **the measurement script must be rerunnable**, with its run command written down.
+6. Measure exactly the planned criteria on the shared dataset. Never tune an option to fit the measurement set.
+7. Record per direction: numbers, method, pros/cons, surprises.
+
+### Verify
+
+8. Review the results: are the numbers reproducible (rerun the script yourself), and were all options compared under the same conditions? Fill any gap before writing the report.
+
+### Merge
+
+9. Write `reports/research-<task>.md`: the question, a comparison table of options × criteria (real numbers), the recommendation and reasons, risks, and the next step if the recommendation is chosen (usually a feature task). Commit it to the base branch per `adlc-git-local`, passing the **Merge approval** point; **commit only the report and the measurement scripts**, never the experimental code.
+
+### Report
+
+10. **Reopen `adlc-report`** and send the full Completion report. Acceptance uses the brief's criteria; the Quality section is the summarized comparison table. Add a section **Decisions the owner needs to make**.
+
+## Output
+
+`reports/research-<task>.md`:
+
+```
+# Research: <question>
+## Why it matters
+## Options and criteria (weights)
+## Method (dataset, measurement command per option)
+## Comparison
+| Option | <criterion 1> | <criterion 2> | ... | Weighted score |
+## Recommendation and reasons
+## Risks
+## Next step (proposed task)
+```
+
+## Quality checklist
+
+- [ ] Every option has a real number for every criterion, with its source command.
+- [ ] Same dataset and measurement method for all options.
+- [ ] Measurement scripts rerun by you; results match.
+- [ ] Only the report and measurement scripts reached the base branch.
+- [ ] Completion report includes "Decisions the owner needs to make".
+
+## Guardrails
+
+**Never**
+- Merge experimental code into the base branch.
+- Report a number not produced by a recorded run.
+- Tune an option to the measurement set.
+
+**Ask first**
+- Exceeding the agreed time limit.
+- Spending money (paid APIs, cloud resources) to measure an option.
+
+## Example
+
+**Request:** "Should we use FAISS or pgvector for product search?"
+
+**Outline of the response:** brief with criteria recall@10, p95 latency, ops cost, offline support; plan with one shared 50k-item dataset and one benchmark script; spikes `spike/vector-faiss` and `spike/vector-pgvector`; results rerun and compared; `reports/research-vector-search.md` committed with the table and recommendation; Completion report with the decision the owner must make.

@@ -1,39 +1,90 @@
 ---
 name: adlc-verify-browser
-title: Verify bằng trình duyệt
-description: Tự mở app hay trang trên trình duyệt thật, làm từng luồng người dùng, chụp ảnh làm bằng chứng.
-triggers: adlc verify browser, verify bằng trình duyệt
+title: Verify in a real browser
+description: Run the app yourself, open it in a real browser, walk through every user flow per test case and capture screenshots committed to the repo as evidence.
+triggers: adlc verify browser, verify in browser, browser verification, test the ui in a browser, verify bằng trình duyệt
 tags: adlc-craft, internal
 license: Unspecified
 author: QACI Duo
 ---
 
-# Verify bằng trình duyệt
+# Verify in a real browser
 
-Skill git và **nhánh gốc** của bạn ghi trong mục Môi trường của hướng dẫn hệ thống: `adlc-git-local` (demo cục bộ, nhánh gốc `main`) hoặc `adlc-git-azure` (Azure Repos, vd nhánh gốc `dev`). Dưới đây "nhánh gốc" là nhánh đó. Trên Azure, bước "merge" của Tech Lead là vote approve PR rồi chờ người thật hoàn tất PR trên Azure, và "Mở PR" của engineer là PR thật (skill `adlc-git-azure`).
+Run the app yourself and use it like a real user, one test case at a time, in a real browser, with a committed screenshot per test case as evidence. This is the Verify phase for any work with a UI; the Pass / Fail verdict is yours.
 
-Đường dẫn bản clone của repo trong máy ảo nằm trong mục **Môi trường** của hướng dẫn hệ thống của bạn.
+Your git skill is `adlc-git-local`; the **base branch** comes from the assignment (see the soul's "Environment"). The path of the repository clone inside the VM is given in the **Environment** section of your system instructions.
 
-## Vì sao trong máy ảo
+## When to use
 
-Trình duyệt dựng sẵn của bot chỉ vào được các cổng localhost do chính bot chạy. Local VM là một máy Linux có desktop và Firefox, nơi bạn tự chạy app rồi thao tác như người dùng thật.
+- Verifying work that has a UI or user flow before merge (feature, bugfix, paper-prototype demo app).
+- Re-verifying after a fix for a failed test case.
 
-Máy ảo **không thấy thư mục trên máy chủ**, chỉ thấy `/home/cua/workspace`. Repo đã có một bản clone ở đó.
+**Not for:** before/after screenshots of a UI change while implementing (`adlc-ui-preview`); code review (`adlc-code-review`); API-only or CLI-only checks (exercise them with `curl` or the command, per the soul's "Running tests").
 
-## Các bước
+## Why a VM
 
-1. Trên **máy chủ**, kéo nhánh gốc mới nhất vào bản clone: `git -C <bản clone trên máy chủ> pull --ff-only`.
-2. Trong **máy ảo** (`vm_exec`): vào `/home/cua/workspace/<repo>`, cài requirements, chạy app ở cổng 5000 (chạy nền).
-   - Python của máy ảo không cài được thư viện đã ghim thì dùng một môi trường ảo phiên bản khác, và ghi lại trong báo cáo.
-3. Mở **Firefox của desktop** tới `http://127.0.0.1:5000` và thao tác như người dùng thật theo từng test case: bấm, gõ, chọn file, đọc kết quả.
-4. Chụp màn hình **mỗi test case**. Ảnh không được chỉ đính kèm trong chat của bạn, vì người khác không đọc được thread của bạn:
-   - lưu trong máy ảo vào `/home/cua/workspace/<repo>/reports/screenshots/<task>-<TC>.png`;
-   - chép sang repo chính `reports/screenshots/`, commit (đứng tên bạn, skill git của bạn);
-   - ghi đường dẫn đó ở cột **Bằng chứng** của bảng nghiệm thu.
-5. Ghi Đạt / Đạt một phần / Không đạt cho từng test case.
-   - Không đạt: tạo phần việc sửa, giao lại engineer phụ trách, review và verify lại.
-   - Thấy test case hoặc tiêu chí không thể đạt được (mâu thuẫn với ràng buộc), báo lại người viết yêu cầu thay vì tự lách.
+The bot's built-in browser can only reach localhost ports the bot itself runs. The Local VM is a Linux machine with a desktop and Firefox, where you run the app and operate it like a real user.
 
-## Không có trình duyệt
+The VM **cannot see host folders**; it only sees `/home/cua/workspace`. The repository already has a clone there.
 
-Nếu máy ảo không khởi động được, verify bằng `curl` hoặc script, và ghi rõ trong báo cáo là **không qua trình duyệt**, kèm lý do.
+## Inputs
+
+| Input | Required | Default |
+|---|---|---|
+| Repository and base branch | yes | from the assignment |
+| Test cases (IDs and expected results) | yes | from the approved SPEC / plan |
+| Task name (for screenshot file names) | yes | the task's plan folder name |
+| App start command and port | no | the repository's own command; port 5000 |
+
+## Procedure
+
+1. On the **host**, pull the latest base branch into the clone: `git -C <host clone path> pull --ff-only`.
+   *Check:* the clone is at the expected commit.
+2. In the **VM** (`vm_exec`): go to `/home/cua/workspace/<repo>`, install requirements, and start the app on port 5000 in the background.
+   - If the VM's Python cannot install the pinned libraries, use a virtual environment with a different Python version and record that in the report.
+3. Open the **desktop Firefox** at `http://127.0.0.1:5000` and act like a real user for each test case: click, type, choose files, read the results.
+4. Take a screenshot for **every test case**. Screenshots must not live only as chat attachments, because others cannot read your thread:
+   - save in the VM to `/home/cua/workspace/<repo>/reports/screenshots/<task>-<TC>.png`;
+   - copy into the main repository's `reports/screenshots/` and commit (under your name, with `adlc-git-local`);
+   - put that path in the **Evidence** column of the acceptance table.
+5. Record Pass / Partial pass / Fail for each test case.
+   - Fail: fix it yourself (Implement phase), review it again, and re-run this skill for the affected test cases.
+   - If a test case or criterion cannot be met (it conflicts with a constraint), tell the owner instead of working around it.
+6. Stop the app when done.
+
+**No browser:** if the VM does not start, verify with `curl` or a script, and state clearly in the report that it was **not verified through a browser**, with the reason.
+
+## Output
+
+```
+| TC | Steps performed | Expected | Actual | Result | Evidence |
+|---|---|---|---|---|---|
+| TC1 | {what you did in the browser} | {expected} | {observed} | Pass / Partial pass / Fail | reports/screenshots/<task>-TC1.png |
+```
+
+Plus, when applicable: "Not verified through a browser: {reason}; verified with {curl/script}" and any venv/Python-version deviation.
+
+## Quality checklist
+
+- [ ] Clone pulled to the latest base branch before testing.
+- [ ] Every test case exercised in the real browser, not only via API calls.
+- [ ] One screenshot per test case, committed under `reports/screenshots/` and linked in the Evidence column.
+- [ ] Each test case has Pass / Partial pass / Fail; every Fail was fixed and re-verified, or reported.
+- [ ] Any fallback (no browser, different Python) is stated with the reason.
+
+## Guardrails
+
+**Never**
+- Mark a test case Pass without having exercised it and captured its screenshot.
+- Leave evidence only as a chat attachment.
+- Work around an unachievable criterion silently.
+- Sign in to external services through the browser.
+
+**Ask first**
+- Changing a test case or acceptance criterion that turns out to be unachievable.
+
+## Example
+
+Request: verify the CSV export fix (TC1: export with an active filter, TC2: export without a filter).
+
+Outline: pull `main` into the clone; in the VM install requirements and start the app on 5000; in Firefox apply a filter, click Export, open the file (TC1), then repeat without a filter (TC2); save `reports/screenshots/csv-export-TC1.png` and `-TC2.png`, copy and commit them; fill the table with Pass for both and the two paths as evidence.

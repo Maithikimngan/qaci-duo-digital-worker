@@ -1,57 +1,106 @@
 ---
 name: adlc-code-review
-title: Review code (Tech Lead)
-description: Cách Tech Lead review nhánh trước khi merge.
-triggers: adlc code review, review code
+title: Self-review before merge
+description: "The agent's own review of a branch before Merge approval: run the tests and the app yourself, exercise every test case under real conditions, and pass a fixed checklist with evidence."
+triggers: "adlc code review, code review, review code, self-review, review before merge"
 tags: adlc-craft, internal
 license: Unspecified
 author: QACI Duo
 ---
 
-# Review code (Tech Lead)
+# Self-review before merge
 
-Skill git và **nhánh gốc** của bạn ghi trong mục Môi trường của hướng dẫn hệ thống: `adlc-git-local` (demo cục bộ, nhánh gốc `main`) hoặc `adlc-git-azure` (Azure Repos, vd nhánh gốc `dev`). Dưới đây "nhánh gốc" là nhánh đó. Trên Azure, bước "merge" của Tech Lead là vote approve PR rồi chờ người thật hoàn tất PR trên Azure, và "Mở PR" của engineer là PR thật (skill `adlc-git-azure`).
+Before every merge you review your own branch as a strict reviewer would, not on the confidence of the turn that wrote the code. A real review, never a rubber stamp. Viewing diffs, running a branch and merging follow `adlc-git-local`.
 
-Review thật, không duyệt cho qua. Cách xem diff, chạy thử nhánh và merge: skill git của bạn.
+## When to use
 
-## Các bước
+- In the Verify phase of `adlc-feature`, `adlc-bugfix` and `adlc-chore`, for every branch, before the **Merge approval** point.
+- When a subagent produced the code: review its branch the same way; its own report is not evidence.
 
-1. Đọc diff toàn bộ nhánh, đối chiếu với SPEC (hoặc báo lỗi) và **ranh giới đã chốt** trong plan.
-2. **Tự chạy test của nhánh** trong worktree tạm. Không tin con số engineer báo.
-   - Task có API, lệnh hay giao diện: **tự chạy app** (theo mục "Chạy test" của hướng dẫn hệ thống: database thử, tài khoản admin và user thường) và tự gọi **từng test case** như người dùng thật, ghi lệnh và kết quả vào báo cáo review.
-   - **Chưa tự chạy test và chưa tự gọi thử thì chưa được gửi card Duyệt merge.** Không làm được (thiếu dịch vụ, thiếu quyền) thì ghi rõ trong card là phần đó chưa kiểm và vì sao, không ghi "đạt".
-3. Đi qua checklist bên dưới.
-4. Thiếu bất kỳ mục nào: gửi feedback cụ thể (file, dòng, cần sửa gì, vì sao) qua `coordinate_bots` với `rework: true`, rồi kết thúc lượt và review lại khi engineer báo. **Không tự sửa code thay engineer.**
-5. Đạt: merge. Ghi vào nhật ký tiến độ (skill `adlc-report`): giờ review, kết quả, số vòng.
+**Not for:** UI acceptance after merge (`adlc-verify-browser`), UI preview before push (`adlc-ui-preview`), the final report (`adlc-report`).
 
-## Checklist chung
+## Inputs
 
-- Đúng yêu cầu và đúng ranh giới đã chốt; không sửa ngoài phạm vi.
-- Mọi code mới hoặc đổi hành vi đều có test; test cũ không bị xoá hay nới để cho qua.
-- Test nằm **trong commit của nhánh**, không chỉ trong worktree của engineer: `git show --stat --format= <nhánh gốc>..<nhánh>` phải có file test. Repo bỏ qua `tests/*` trong `.gitignore` thì file test phải được thêm bằng `git add -f`.
-- Chạy được với **đúng số process như khi chạy thật**: đọc cấu hình chạy (Dockerfile, `gunicorn.conf.py`, số worker, celery). Code ghi file chung, cache hay trạng thái dùng chung (vd log xoay vòng, file tạm, khoá) phải an toàn khi nhiều worker cùng chạy, và có test nhiều process nếu có thể.
-- Xử lý đầu vào lỗi (file hỏng, thiếu trường, giá trị ngoài miền) có thông báo dễ hiểu, không làm sập app.
-- Không thêm dependency, dịch vụ mạng hay model ngoài ràng buộc của task.
-- README hoặc tài liệu cập nhật nếu cách chạy, cấu hình hay API đổi.
-- Diff gọn: không file rác, không debug print, không đổi định dạng hàng loạt.
+| Input | Required | Default |
+|---|---|---|
+| Branch and base branch | Yes | From the plan |
+| SPEC (or bug report) and the boundaries fixed in the plan | Yes | `sharedBotFolder/plans/<repo>-<task>/` |
+| Test plan (TC list) | Yes | From the plan |
+| Production run configuration (Dockerfile, `gunicorn.conf.py`, worker count, celery) | No | Read from the repository |
 
-## Phần AI (model, đặc trưng, xếp hạng, ngưỡng, độ chính xác)
+## Procedure
 
-- Ngưỡng hoặc tham số **không được chỉnh cho khớp đúng tập đang dùng để chấm** (vd đặt ngưỡng ngay trên điểm sai cao nhất của benchmark). Bắt engineer báo số liệu trên một tập **held-out** (biến đổi khác, chưa dùng để chỉnh), và tự thử vài input mới chưa ai thấy.
-- Kết quả chỉ tốt trên benchmark mà kém trên held-out là **không đạt**.
-- Số liệu phải có trước/sau, cùng một tập, cùng cách tính.
+1. Read the whole branch diff against the SPEC (or bug report) and the **boundaries fixed** in the plan.
+2. **Run the branch's tests yourself** in a temporary worktree. Do not trust numbers from an earlier turn or a subagent.
+   - For tasks with an API, a command or a UI: **start the app yourself** (per the soul's "Running tests": test database, an admin account and a regular user) and exercise **each test case** as a real user would, recording commands and results in the review notes.
+   - **No Merge approval until you have run the tests and exercised the cases yourself.** If something cannot be run (missing service, missing access), mark it "not verified" with the reason in the approval card or self-approval line; never write Pass for it.
+3. Go through every checklist section below.
+4. Any item missing: write concrete findings (file, line, what to change, why) in the progress log, fix them on the same branch, then **review again from step 1**. Count the rounds.
+5. All items pass: proceed to the **Merge approval** point (`adlc-approval`), then merge. Record in the progress log (`adlc-report`): review time, result, number of rounds.
 
-## Test ổn định giữa các môi trường
+## Checklist: general
 
-- Test chất lượng phải pass trên mọi môi trường hợp lệ (phiên bản Python, bản build thư viện khác nhau), chứ không chỉ trên máy của engineer.
-- Ngưỡng phải chừa biên độ dựa trên số đo thật ở nhiều môi trường, hoặc loại bỏ nguồn dao động (vd tạo ảnh thử không nén thay vì JPEG).
-- Ngưỡng đặt sát đúng con số đo trên một máy là **không đạt**.
+- Meets the requirement and the fixed boundaries; nothing changed outside scope.
+- All new or behavior-changing code has tests; existing tests were not deleted or loosened to pass.
+- Tests are **in the branch's commits**, not only in the worktree: `git show --stat --format= <base branch>..<branch>` must list test files. If the repository ignores `tests/*` in `.gitignore`, test files must be added with `git add -f`.
+- Works with **the same number of processes as production**: read the run configuration (Dockerfile, `gunicorn.conf.py`, worker count, celery). Code that writes shared files, caches or shared state (rotating logs, temp files, locks) must be safe with multiple workers running, with a multi-process test where possible.
+- Invalid input (corrupt file, missing field, out-of-range value) gets a clear message and never crashes the app.
+- No dependency, network service or external model added beyond the task's constraints.
+- README or docs updated if how to run, configuration or the API changed.
+- Clean diff: no junk files, no debug prints, no mass reformatting.
 
-## Dùng thử như người dùng thật
+## Checklist: AI parts (models, features, ranking, thresholds, accuracy)
 
-- **Thử trong điều kiện chạy thật, không chỉ trên dữ liệu đứng yên**:
-  - API đọc file hay trạng thái mà chính app đang ghi (log, cache, upload, hàng đợi): gọi nó **trong lúc app vẫn đang ghi** (vd tải file log đang được ghi, nhiều lần, có request khác chạy song song) và so số byte, nội dung trả về.
-  - Code chạy trong nhiều process (gunicorn nhiều worker, celery): thử với đúng số worker như cấu hình chạy thật, và khi worker khởi động lại.
-  - Test của engineer chỉ dùng dữ liệu đứng yên cho các trường hợp trên thì yêu cầu thêm test cho trường hợp đang thay đổi.
+- Thresholds or parameters must **not be tuned to the exact set used for scoring** (e.g. a threshold set just above the benchmark's highest false score). Require numbers on a **held-out** set (different transformations, never used for tuning), and try a few new inputs nobody has seen.
+- Good only on the benchmark but worse on held-out is **Fail**.
+- Metrics must be before/after, on the same set, computed the same way.
 
-Trước khi coi nhánh là đạt, chạy app và thử vài input điển hình. Đọc kỹ output: có đúng **mục tiêu nghiệp vụ** không, chứ không chỉ đúng câu chữ tiêu chí (vd nhãn "Rất giống" gắn cho cả 5 kết quả thì nhãn vô dụng, dù tiêu chí ghi "đạt").
+## Checklist: tests stable across environments
+
+- Quality tests must pass in every valid environment (Python versions, library builds), not only on one machine.
+- Thresholds leave a margin based on real measurements across environments, or remove the source of variance (e.g. generate uncompressed test images instead of JPEG).
+- A threshold set right at the number measured on one machine is **Fail**.
+
+## Checklist: use it like a real user
+
+- **Test under live conditions, not only on static data**:
+  - an API that reads files or state the app itself is writing (logs, caches, uploads, queues): call it **while the app is still writing** (e.g. download a log file being written, several times, with other requests in parallel) and compare byte counts and content returned;
+  - code running in multiple processes (gunicorn workers, celery): test with the production worker count, and across worker restarts;
+  - if the tests use only static data for these cases, add tests for the changing case.
+- Before calling the branch Pass, run the app and try a few typical inputs. Read the output carefully: does it meet the **business goal**, not just the letter of the criterion (e.g. a "Very similar" label on all 5 results makes the label useless, even if the criterion says Pass).
+
+## Output
+
+Review notes in the progress log, and the summary carried into the Merge approval card or self-approval line:
+
+```
+Review: <branch> — round <n> — <Pass / Fail>
+Tests (Verified by me): <command> → <passed>/<total>, skipped <n> (<reason>)
+Test cases exercised: TC1 <command> → <result> | TC2 ... | TCk not verified (<reason>)
+Tests in commits: <files from git show --stat>
+Findings fixed this round: <file:line — change — why> | none
+```
+
+## Quality checklist
+
+- [ ] Tests run by you on the branch; numbers come from that run.
+- [ ] Every test case exercised with the app running, or marked "not verified" with a reason.
+- [ ] Test files present in the branch commits.
+- [ ] Every checklist section above passed.
+- [ ] Review time, result and rounds recorded in the progress log.
+
+## Guardrails
+
+**Never**
+- Pass a branch on a subagent's or an earlier turn's claims.
+- Write Pass for anything you did not run.
+- Merge while any finding is open.
+
+**Ask first**
+- Accepting a known "not verified" item into the merge (state it in the Merge approval).
+
+## Example
+
+**Request (internal):** review `feature/log-download` before merge.
+
+**Outline:** diff matches the SPEC and boundaries; tests run 38/38 in a temp worktree; app started with 4 gunicorn workers; TC1–TC3 called with `curl` while logs rotate, round 1 finds truncated downloads during rotation (`api/logs.py:42`), fixed with a read-under-lock and a multi-process test; round 2 Pass; Merge approval with the notes above.

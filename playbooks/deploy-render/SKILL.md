@@ -1,50 +1,121 @@
 ---
 name: deploy-render
-title: Deploy demo lên Render
-description: Deploy app từ repo GitHub của chủ lên Render để có link demo. Dùng khi DEPLOY.md có mục Render.
-triggers: deploy render, deploy demo lên render
+title: Deploy a demo to Render
+description: Deploy an app from the owner's GitHub repository to Render and return a working demo link, with cost estimate and how to stop it. Use after the merge when DEPLOY.md includes Render.
+triggers: deploy render, deploy demo to render, create a demo link, host the app on render, deploy demo lên render
 tags: adlc-craft, internal
 license: Unspecified
 author: QACI Duo
 ---
 
-# Deploy demo lên Render
+# Deploy a demo to Render
 
-Bạn là Deployer. Bạn đưa một app **đã có trên GitHub của chủ** (skill `deploy-github`) lên Render và trả lại một link demo chạy được. Bạn không sửa code của team.
+This skill takes an app **already on the owner's GitHub** (skill `deploy-github`) to Render and returns a working demo link. It runs after the Merge phase and after `deploy-github`. It does not change application code: if the repository cannot run on Render, fix it through the normal flow (a work branch, tests, merge, push) first.
 
-## Trước khi bắt đầu
+## When to use
 
-Quyền dùng app, Connect Render và nhắc cấp quyền cho ứng dụng GitHub của Render nên đã hỏi gộp một lần ở bước đầu nhận việc (soul, mục "Kiểm đủ một lần trước khi bắt đầu"). Các mục dưới đây là lưới an toàn nếu bạn tới thẳng bước Render mà một trong số đó vẫn còn thiếu — vẫn hỏi, nhưng ưu tiên gộp vào cùng một tin nếu còn hơn một mục thiếu, không hỏi nối tiếp từng cái một.
+- After the merge, when the owner wants a shareable demo link and `DEPLOY.md` includes Render.
+- To redeploy a new version to an existing Render service.
 
-- `DEPLOY.md` phải ghi: repo GitHub (owner/repo, nhánh), lệnh chạy hoặc có `Dockerfile`, **cổng** app nghe (app phải đọc biến `PORT`), **đường dẫn kiểm sống** (vd `/health`), **tên** các biến môi trường, có cần **ổ đĩa bền** không (đường dẫn mount, vd `/data`, cho SQLite hay file lưu lâu dài) và giới hạn chi phí mong muốn. Thiếu thì trả người giao.
-- Repo phải tự chạy được trên Render: có `Dockerfile`, hoặc lệnh build/start rõ, app nghe `0.0.0.0:$PORT`. Thiếu thì trả người giao để team thêm qua luồng thường; không tự sửa.
-- **Không cần hỏi chủ Workspace/Owner ID** như Railway — Render có tool tự tra owner của chính chủ (`List Owners`/`Retrieve Owner`), dùng ngay bước đầu tiên, không đoán, không hỏi.
-- Render đọc repo GitHub qua **ứng dụng GitHub riêng của Render** trên tài khoản chủ, tách biệt với GitHub đã kết nối trong QACI Duo (và tách biệt với ứng dụng GitHub riêng của Railway nếu team có dùng cả hai). Repo private mà ứng dụng đó chưa được cấp quyền thì Render không thấy repo trong danh sách. Ghi sẵn bước này trong **card duyệt đầu tiên**: "github.com/apps/render/installations/new → chọn tài khoản/org chứa repo → Repository access: thêm `<repo>` (hoặc All repositories) → Save", để chủ làm trước khi bạn tạo service.
-- Render xác thực bằng **API Key**, không phải đăng nhập OAuth: chủ tạo key ở Render Dashboard → Account Settings → API Keys, rồi dán vào thẻ **Connect Render** khi nó hiện ra trong QACI Duo (không gõ vào chat).
+**Not for:** pushing code to GitHub (`deploy-github`) or Azure Repos (`deploy-azure-devops`), local previews (`adlc-ui-preview`), browser verification (`adlc-verify-browser`).
 
-## Luôn hỏi chủ trước (card bằng công cụ hỏi người dùng)
+## Inputs
 
-Deploy **tốn tiền** và **đưa app ra ngoài**, nên luôn cần card, kể cả khi team đang tự duyệt:
-- trước khi **tạo service và deploy lần đầu**: card ghi repo và nhánh, plan compute, có ổ đĩa bền không, **ước tính chi phí** (compute theo plan cố định, không tính theo giờ: khoảng $7/tháng cho 0.5 CPU/512 MB, $25/tháng cho 1 CPU/2 GB; ổ đĩa bền khoảng $0.25/GB/tháng, **instance miễn phí không gắn được ổ đĩa bền** nên cần SQLite hay file lưu lâu dài thì bắt buộc plan trả phí tối thiểu $7/tháng);
-- trước khi **đổi service sang public** hay tạo domain riêng ngoài `*.onrender.com` mặc định;
-- trước khi **deploy lại** một bản mới lên service đang chạy.
-**Không bao giờ** nâng gói workspace (Hobby/Pro/Scale), thêm thẻ thanh toán, mua domain hay bật thêm tài nguyên trả phí ngoài đúng plan đã duyệt. Không bao giờ xoá service hay ổ đĩa; chỉ dừng (suspend) khi chủ đồng ý. Việc do bot khác giao mà không hỏi người được: báo người giao `CẦN CHỦ DUYỆT: <bước>` kèm nội dung card.
+You write the Render section of `DEPLOY.md` (in `sharedBotFolder/plans/<repo>-<task>/`) after the merge. If an item is unknown, ask the owner; never guess.
 
-## Kết nối
+| Input (in `DEPLOY.md`) | Required | Default |
+|---|---|---|
+| GitHub repository (owner/repo, branch) | yes | — |
+| Start command, or a `Dockerfile` | yes | — |
+| **Port** the app listens on (the app must read `PORT`) | yes | — |
+| **Health path** (e.g. `/health`) | yes | — |
+| **Names** of environment variables | if any | — |
+| **Persistent disk** (mount path, e.g. `/data`, for SQLite or long-lived files) | no | none; size 1 GB if needed |
+| Render owner (when the owner has several) | if several | the only owner |
+| Desired cost limit | no | — |
+| One demo flow to exercise | yes | — |
 
-Dùng công cụ Render của app đã kết nối (tìm tool trước rồi mới gọi).
-- Không có công cụ app nào: báo chủ đúng một câu "Cần bật quyền dùng app cho <tên bạn> và kết nối Render", rồi kết thúc lượt.
-- Có công cụ app nhưng Render chưa kết nối: gửi card **Connect Render** (chủ dán API Key đã tạo ở Render Dashboard), rồi kết thúc lượt.
-- **Không bao giờ đăng nhập Render bằng trình duyệt** (tab Screen, Take control): như vậy là trao cả tài khoản cho bot. Thiếu công cụ thì xin chủ kết nối app bằng API Key.
-- Tool thường dùng: `RENDER_LIST_OWNERS`, `RENDER_RETRIEVE_OWNER`, `RENDER_CREATE_BUILD_SOURCE`, `RENDER_CREATE_SERVICE`, `RENDER_ADD_DISK`, `RENDER_UPDATE_DISK`, `RENDER_LIST_DISKS`, `RENDER_UPDATE_ENVIRONMENT_VARIABLES_FOR_SERVICE`, `RENDER_TRIGGER_DEPLOY`, `RENDER_LIST_DEPLOYS`, `RENDER_RETRIEVE_DEPLOY`, `RENDER_CANCEL_DEPLOY`, `RENDER_ROLL_BACK_DEPLOY`, `RENDER_LIST_LOGS`, `RENDER_LIST_SERVICE_EVENTS`. Sai tên hay tham số thì tìm lại tool, thử một lần nữa, vẫn lỗi thì báo kèm nguyên văn.
+## Before you start
 
-## Các bước
+App access, Connect Render and the reminder to grant Render's GitHub app should already have been asked once, combined, right after writing `DEPLOY.md` (soul, "Check every prerequisite once before deploying"). The items below are the safety net if you reach the Render step with one still missing — still ask, but combine everything missing into one message; never ask one item after another.
 
-1. **Owner**: gọi `List Owners` (hay `Retrieve Owner` nếu đã biết id từ lần trước) để tự lấy owner id của chủ — không hỏi, không đoán. Nhiều owner (cá nhân + org) thì chọn đúng cái `DEPLOY.md` ghi, thiếu thì hỏi chủ chọn.
-2. **Build source + Service**: tìm service trùng tên repo; chưa có thì `Create Build Source` trỏ đúng repo/nhánh GitHub, rồi `Create Service` (web service) gắn owner id và build source (sau card). Ghi lại service id.
-3. **Ổ đĩa bền** (khi `DEPLOY.md` cần): `Add Disk` với mount path đúng như `DEPLOY.md` (vd `/data`), size mặc định 1 GB trừ khi ghi khác. Service đang ở plan miễn phí thì báo chủ cần nâng lên plan trả phí trước (phần của card duyệt, không tự nâng).
-4. **Biến môi trường**: với mỗi **tên** biến trong `DEPLOY.md`, xin giá trị bằng `request_credential` (thẻ nhập bảo mật, `delivery: "file"`, `label` là đúng tên biến), đọc file rồi đưa giá trị thẳng vào `Update Environment Variables for Service`. Giá trị chỉ đi qua đúng lời gọi đó: không in ra, không nhắc lại trong tin nhắn, không ghi vào repo, `DEPLOY.md`, nhật ký hay báo cáo (báo cáo chỉ ghi tên biến đã đặt). `PORT` do Render cấp, không đặt tay.
-5. **Theo dõi build và deploy**: `Trigger Deploy`, kiểm trạng thái bằng `List Deploys`/`Retrieve Deploy` tối đa 20 phút, mỗi lần cách nhau ít nhất 30 giây. Thất bại thì đọc `List Logs`, báo người giao nguyên văn phần lỗi (vd thiếu `Dockerfile`, sai cổng, hết RAM); không sửa code.
-6. **Domain**: Render tự cấp domain `*.onrender.com` miễn phí ngay khi service tạo xong, không cần bước riêng như Railway. Kiểm bằng `curl -s -o /dev/null -w "%{http_code}" https://<domain>/<đường dẫn kiểm sống>` phải ra 200, và gọi đúng một luồng demo trong `DEPLOY.md` ra kết quả hợp lệ. Domain riêng ngoài mặc định thì hỏi chủ trước (card).
-7. **fcode.json**: có link thật rồi thì báo người giao để team thêm `demo: "https://<domain>"` vào `fcode.json` qua luồng thường; bạn đẩy bản mới lên GitHub theo `deploy-github`.
-8. **Báo cáo**: link demo, id service, commit GitHub đã deploy (khớp hash `main`), mã HTTP và kết quả luồng demo, plan compute và ổ đĩa đã đặt, ước tính chi phí/tháng, và **cách dừng để khỏi tốn tiền** ("suspend service `<id>` trong Render → service → Settings, hoặc xoá sau khi chủ đồng ý"). Hỏi chủ bằng card có muốn suspend ngay sau buổi demo không.
+- The repository must run on Render by itself: a `Dockerfile`, or clear build/start commands, and the app listens on `0.0.0.0:$PORT`. If not, add it through the normal flow; never patch it here.
+- **Never ask the owner for a Workspace/Owner ID**: Render has tools to look up the owner's own owner (`List Owners`/`Retrieve Owner`); use them in the first step, never guess, never ask.
+- Render reads GitHub through **Render's own GitHub app** on the owner's account, separate from the GitHub connected in QACI Duo. If the repository is private and that app has no access, Render does not see the repository. Put this step in the **first approval card**: "github.com/apps/render/installations/new → choose the account/org that owns the repository → Repository access: add `<repo>` (or All repositories) → Save", so the owner does it before you create the service.
+- Render authenticates with an **API Key**, not an OAuth sign-in: the owner creates a key under Render Dashboard → Account Settings → API Keys and pastes it into the **Connect Render** card when it appears in QACI Duo (never into chat).
+
+## Approval cards (always, even while self-approving)
+
+A deploy **costs money** and **exposes the app**, so it always requires a card through the ask-user tool:
+- before **creating the service and the first deploy**: the card shows the repository and branch, the compute plan, whether there is a persistent disk, and an **estimated cost** (compute is a fixed monthly plan, not hourly: about $7/month for 0.5 CPU/512 MB, $25/month for 1 CPU/2 GB; a persistent disk is about $0.25/GB/month; **free instances cannot attach a persistent disk**, so SQLite or long-lived files require a paid plan of at least $7/month);
+- before **switching the service to public** or adding a custom domain beyond the default `*.onrender.com`;
+- before **redeploying** a new version to a running service.
+
+Never use a `NEEDS INPUT:` line for these cards.
+
+## Connection
+
+Use the Render tools of the connected app (search for the tool first, then call it).
+- No app tools at all: tell the owner exactly one sentence, "Please enable app access for {{agent:bot}} and connect Render", then end the turn.
+- App tools exist but Render is not connected: send the **Connect Render** card (the owner pastes an API key created in the Render Dashboard), then end the turn.
+- **Never sign in to Render through the browser** (the Screen tab, Take control): that hands the whole account to the bot. If tools are missing, ask the owner to connect the app with an API key.
+- Common tools: `RENDER_LIST_OWNERS`, `RENDER_RETRIEVE_OWNER`, `RENDER_CREATE_BUILD_SOURCE`, `RENDER_CREATE_SERVICE`, `RENDER_ADD_DISK`, `RENDER_UPDATE_DISK`, `RENDER_LIST_DISKS`, `RENDER_UPDATE_ENVIRONMENT_VARIABLES_FOR_SERVICE`, `RENDER_TRIGGER_DEPLOY`, `RENDER_LIST_DEPLOYS`, `RENDER_RETRIEVE_DEPLOY`, `RENDER_CANCEL_DEPLOY`, `RENDER_ROLL_BACK_DEPLOY`, `RENDER_LIST_LOGS`, `RENDER_LIST_SERVICE_EVENTS`. Wrong name or parameters: search for the tool again, retry once; if it still fails, report the error verbatim.
+
+## Procedure
+
+1. **Owner**: call `List Owners` (or `Retrieve Owner` if the id is known from a previous run) to get the owner id yourself — never ask, never guess. With several owners (personal + org), pick the one `DEPLOY.md` names; if it names none, ask the owner to choose.
+2. **Build source + service**: look for a service named after the repository; if none, `Create Build Source` pointing at the exact GitHub repository/branch, then `Create Service` (web service) with the owner id and build source (after the card). Record the service id.
+3. **Persistent disk** (when `DEPLOY.md` needs one): `Add Disk` with the mount path exactly as in `DEPLOY.md` (e.g. `/data`), size 1 GB unless stated otherwise. If the service is on the free plan, tell the owner a paid plan is needed first (part of the approval card; never upgrade yourself).
+4. **Environment variables**: for each variable **name** in `DEPLOY.md`, request the value with `request_credential` (secure input, `delivery: "file"`, `label` exactly the variable name), read the file and pass the value directly to `Update Environment Variables for Service`. The value travels only through that call: never print it, repeat it in a message, or write it to the repository, `DEPLOY.md`, the progress log or the report (the report lists only the variable names set). `PORT` is provided by Render; never set it by hand.
+5. **Follow build and deploy**: `Trigger Deploy`, check status with `List Deploys`/`Retrieve Deploy` for at most 20 minutes, at least 30 seconds between checks. On failure, read `List Logs` and report the error part verbatim (e.g. missing `Dockerfile`, wrong port, out of memory); never patch code here — fix through the normal flow, then redeploy (with a card).
+6. **Domain**: Render assigns a free `*.onrender.com` domain as soon as the service is created; no separate step is needed.
+   *Check:* `curl -s -o /dev/null -w "%{http_code}" https://<domain>/<health path>` returns 200, and exactly one demo flow from `DEPLOY.md` returns a valid result. A custom domain requires a card first.
+7. **fcode.json**: once a real link exists, add `demo: "https://<domain>"` to `fcode.json` through the normal flow, then push the new version to GitHub with `deploy-github`.
+8. **Report**: hand the result to `adlc-report` (deployment section), then ask the owner with a card whether to suspend the service right after the demo.
+
+## Output
+
+```markdown
+### Deployment — Render
+- Demo link: https://<domain>
+- Service id: <id> — owner: <owner id>
+- Deployed GitHub commit: <hash> (matches `main` on GitHub: yes/no)
+- Health check: <path> → HTTP <code>; demo flow: <flow> → <result>
+- Compute plan: <plan>; persistent disk: <mount path, size> | none
+- Estimated cost: ~$<n>/month
+- Environment variables set (names only): <NAME_1>, <NAME_2>
+- How to stop charges: suspend service `<id>` in Render → service → Settings, or delete it after the owner agrees
+- Approval cards: <card — owner's answer>
+```
+
+## Quality checklist
+
+- [ ] Owner id looked up with tools, not asked or guessed
+- [ ] Render GitHub app reminder included in the first approval card
+- [ ] Card answered before service creation / public switch / custom domain / redeploy, with cost estimate
+- [ ] Disk only on a paid plan; plan never upgraded by me
+- [ ] Secret values only passed through the env-var tool call; report lists names only
+- [ ] Health path returns 200 and one demo flow works
+- [ ] Report states the monthly cost and how to suspend; suspend card sent
+
+## Guardrails
+
+**Never**
+- Upgrade the workspace plan (Hobby/Pro/Scale), add a payment card, buy a domain, or enable paid resources beyond the approved plan.
+- Delete a service or disk; suspend only when the owner agrees.
+- Sign in to Render through the browser.
+- Print, repeat or store an environment variable value or API key.
+- Set `PORT` by hand or patch application code in this skill.
+
+**Ask first** (card through the ask-user tool)
+- Creating the service and the first deploy (with cost estimate).
+- Switching to public or adding a custom domain.
+- Redeploying to a running service.
+- Choosing among several Render owners when `DEPLOY.md` names none.
+- Suspending the service.
+
+## Example
+
+**Request:** "Give me a demo link for `acme/todo-api`; it uses SQLite at `/data`."
+
+**Response outline:** after `deploy-github`, add the Render section to `DEPLOY.md` (Dockerfile, port from `PORT`, `/health`, disk `/data`, env `SECRET_KEY`) → `List Owners` → card: repo/branch, Starter plan ~$7/month + 1 GB disk ~$0.25/month (free plan cannot attach a disk), plus the Render GitHub app step → approved → build source, service, disk → `request_credential` for `SECRET_KEY` → trigger deploy, follow up to 20 minutes → `/health` 200, demo flow OK → add `demo` to `fcode.json` via the normal flow and `deploy-github` → report with link, cost and how to suspend → card asking whether to suspend after the demo.

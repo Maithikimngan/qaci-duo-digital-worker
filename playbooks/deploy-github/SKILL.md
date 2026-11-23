@@ -1,67 +1,135 @@
 ---
 name: deploy-github
-title: Đưa code lên GitHub của chủ
-description: Đưa code đã merge lên GitHub của chủ, release kèm file build, đăng FCode Market. Dùng khi nhận DEPLOY.md.
-triggers: deploy github, đưa code lên github của chủ
+title: Publish code to the owner's GitHub
+description: Push the merged base branch to the owner's GitHub, optionally create a release with build files and list it on FCode Market. Use after the merge when DEPLOY.md selects GitHub.
+triggers: deploy github, push to github, publish to the owner's github, create a github release, list on fcode market, đưa code lên github của chủ
 tags: adlc-craft, internal
 license: Unspecified
 author: QACI Duo
 ---
 
-# Đưa code lên GitHub của chủ
+# Publish code to the owner's GitHub
 
-Bạn là Deployer của team. Team làm việc bằng git cục bộ; bạn chỉ **đưa nhánh gốc đã merge lên GitHub của chủ**, tạo release, và tuỳ chọn đăng FCode Market. Bạn không sửa code của team: thiếu file (vd `fcode.json`, workflow release) thì trả việc lại người giao, ghi rõ cần thêm gì.
+You work with local git; this skill **pushes the merged base branch to the owner's GitHub**, creates a release and, optionally, lists the app on FCode Market. It runs after the Merge phase. It does not change application code: if a file is missing (e.g. `fcode.json`, a release workflow), add it through the normal flow (a work branch, tests, merge) first, then come back here.
 
-## Đầu vào: `DEPLOY.md`
+## When to use
 
-Người giao việc ghi một file `DEPLOY.md` trong thư mục plan của việc và gửi bạn đường dẫn. File có: đường dẫn repo cục bộ, nhánh gốc, **owner** GitHub (tài khoản hay org), **tên repo**, private hay public, có tạo release không (tag), có đăng FCode Market không, có deploy Railway không, và **tên** các biến môi trường cần có (không bao giờ có giá trị). Thiếu mục nào thì hỏi lại người giao, không đoán.
+- After the merge, when the owner wants the code on their GitHub, a GitHub release, or an FCode Market listing.
+- Also as the prerequisite for `deploy-render` when the git platform is GitHub (Render builds from the owner's GitHub).
 
-## Luôn hỏi chủ trước (card bằng công cụ hỏi người dùng)
+**Not for:** Azure Repos (`deploy-azure-devops`), demo deployments (`deploy-render`), local branches and merges (`adlc-git-local`).
 
-Đưa dữ liệu ra ngoài hệ thống nên **luôn cần card**, kể cả khi team đang tự duyệt:
-- trước khi **tạo repo** hoặc **đẩy code lần đầu** vào một repo: card ghi owner/repo, private/public, số file và commit sẽ đẩy, `git diff --stat`;
-- trước khi **đổi repo sang public**;
-- trước khi **tạo release** hoặc **đăng FCode Market**: card ghi tag và file sẽ đính kèm.
-Không bao giờ force, xoá nhánh hay xoá repo trên GitHub. Trong việc do bot khác giao mà hệ thống không cho hỏi người, kết thúc lượt báo người giao `CẦN CHỦ DUYỆT: <bước>` kèm nội dung card; Chief hỏi chủ rồi chuyển nguyên câu trả lời.
+## Inputs
 
-## Kết nối: GitHub chủ đã kết nối (cách chính)
+You write `DEPLOY.md` in `sharedBotFolder/plans/<repo>-<task>/` after the merge, from what the owner asked for. If an item is unknown, ask the owner; never guess.
 
-Phần kiểm quyền và kết nối nên đã làm ở bước đầu nhận việc (soul, mục "Kiểm đủ một lần trước khi bắt đầu" — gộp chung với Railway nếu `DEPLOY.md` cần, không hỏi riêng từng cái). Mục này chỉ nói cách dùng cụ thể khi đã đủ điều kiện, và là lưới an toàn nếu bạn mở thẳng skill này mà chưa qua bước kiểm gộp đó.
+| Input (in `DEPLOY.md`) | Required | Default |
+|---|---|---|
+| Local repository path | yes | — |
+| Merged base branch | yes | — |
+| GitHub **owner** (user account or organization) | yes | — |
+| GitHub **repository name** | yes | — |
+| Private or public | no | private |
+| Create a release (tag) | no | no |
+| List on FCode Market | no | no |
+| Render deployment | no | no (see `deploy-render`) |
+| **Names** of required environment variables (never values) | if any | — |
 
-Dùng công cụ GitHub của app đã kết nối (tìm tool trước rồi mới gọi, không đoán tên tool).
-- **Không có công cụ app nào** trong lượt của bạn: quyền dùng app của bạn đang tắt (bot cài từ gói bắt đầu ở trạng thái này). Báo chủ đúng một câu: "Cần bật quyền dùng app cho <tên bạn> và kết nối GitHub", rồi kết thúc lượt.
-- Có công cụ app nhưng GitHub chưa kết nối: gửi card **Connect GitHub**, nói một câu vì sao cần, rồi kết thúc lượt.
-- **Không bao giờ đăng nhập GitHub bằng trình duyệt** (thẻ "sign in to github.com", tab Screen, Take control): như vậy là trao cả tài khoản cho bot. Thiếu công cụ GitHub thì xin chủ kết nối GitHub trong Apps, hoặc dùng PAT (mục cuối; tạo repo mới cần quyền All repositories và Administration Read & write).
-- Tool thường dùng: tạo repo (`GITHUB_CREATE_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER`, `GITHUB_CREATE_AN_ORGANIZATION_REPOSITORY`), lấy thông tin repo, commit nhiều file (`GITHUB_COMMIT_MULTIPLE_FILES`), Git Database (`GITHUB_GET_A_REFERENCE`, `GITHUB_CREATE_A_BLOB`, `GITHUB_CREATE_A_TREE`, `GITHUB_CREATE_A_COMMIT`, `GITHUB_UPDATE_A_REFERENCE`), topic (`GITHUB_REPLACE_ALL_REPOSITORY_TOPICS`), release (`GITHUB_CREATE_A_RELEASE`, `GITHUB_LIST_RELEASE_ASSETS`), Actions (`GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT`, `GITHUB_LIST_WORKFLOW_RUNS_FOR_A_REPOSITORY`).
-- Tool báo "not found" hay sai tham số: tìm lại tool lấy đúng tên và tham số, thử một lần nữa; vẫn lỗi thì dừng và báo kèm nguyên văn lỗi.
-- 403 kiểu "OAuth App access restrictions": org đang chặn ứng dụng bên thứ ba. Báo chủ: admin org vào GitHub → org → Settings → Third-party access → OAuth app policy để cấp quyền. Không tìm cách lách.
+## Approval cards (always, even while self-approving)
 
-## Các bước
+Pushing data out of the system **always requires a card** through the ask-user tool:
+- before **creating a repository** or the **first push** to a repository: the card shows owner/repo, private/public, the number of files and commits to push, and `git diff --stat`;
+- before **switching a repository to public**;
+- before **creating a release** or **listing on FCode Market**: the card shows the tag and the files to attach.
 
-Chạy ở repo cục bộ, trên nhánh gốc đã merge, `git status --short` sạch. Danh sách file đẩy lên là `git ls-files` (đã qua `.gitignore`); không đẩy `artifacts/`, dữ liệu tải về, `.venv`, file bí mật.
+These cards are separate from the four ADLC approval points and are never skipped. Never use a `NEEDS INPUT:` line for them.
 
-1. **Repo đích**: lấy thông tin repo. Không có thì tạo (sau card), `private: true` trừ khi `DEPLOY.md` ghi khác, `auto_init: true`. Repo đã có lịch sử khác thì dừng và hỏi chủ, không ghi đè.
-2. **Kiểm kích thước trước khi đẩy**: `git ls-files -z | xargs -0 ls -l`. Tool của app đã kết nối không đọc file trên máy: nội dung mỗi file phải nằm nguyên văn trong lời gọi, và một lời gọi không chứa nổi file quá khoảng 100 KB. File như vậy thường là file sinh ra (trang báo cáo nhúng ảnh, ảnh, kết quả build): trả người giao **ngay từ đầu**, đề nghị bỏ khỏi repo và sinh lúc build (vd thêm bước vào `Dockerfile`), rồi mới đẩy; không đẩy dở rồi mới báo.
-3. **Đẩy code** lên nhánh `main` của GitHub:
-   - Repo nhỏ (tới khoảng 50 file văn bản, tổng dưới 1 MB): một lần `GITHUB_COMMIT_MULTIPLE_FILES`, message lấy từ commit cuối của nhánh gốc cục bộ.
-   - Lớn hơn, nhiều file, có file nặng (vd trang HTML nhúng ảnh vài trăm KB) hay file nhị phân: **luôn dùng Git Database**, không xin PAT. Lấy ref `heads/main` và commit hiện tại; mỗi file một blob (base64); một tree (mode `100644`, hoặc `100755` cho file chạy được); commit với parent là commit hiện tại; cập nhật ref (không force). Chia lô nếu nhiều file.
-   - Kiểm lại: hash `heads/main` trên GitHub, số file so với `git ls-files | wc -l`.
-   - Lịch sử commit trên GitHub là commit mới, không giữ từng commit cục bộ; ghi điều này trong báo cáo.
-4. **Release kèm file build** (khi `DEPLOY.md` yêu cầu): repo phải có `.github/workflows/release.yml` (chạy khi `workflow_dispatch` với input `tag`, quyền `contents: write`, build theo README, nén zip, `sha256sum` vào `SHA256SUMS`, `gh release create` với `GITHUB_TOKEN`). Thiếu thì trả người giao để team thêm qua luồng thường. Sau card, gọi `GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT`, theo dõi run tối đa 15 phút (mỗi lần kiểm cách nhau ít nhất 30 giây), thất bại thì báo kèm log. Kiểm release có file zip (> 0 byte) và `SHA256SUMS`.
-5. **FCode Market** (khi yêu cầu): gốc repo có `README.md` và `fcode.json` (`name`, `slug`, `version`, `description`, `category`, `stack`, `run`, `env` **chỉ tên biến**, `createdBy`; `demo` chỉ thêm khi có link thật); topic `fcode-app`, `qaci-duo` và một topic loại app; release có file. Chủ cho địa chỉ market thì kiểm `<market>/api/apps?refresh=1` và `<market>/api/apps/<owner>/<repo>`.
-6. **Báo cáo** người giao: link repo, hash `main` trên GitHub, số file, link release và file, sha256, tên các tool đã gọi. Số và link lấy từ kết quả tool thật.
+## Connection: the owner's connected GitHub app (primary)
 
-## Dự phòng: PAT của chủ
+Access and connection should already have been checked once right after writing `DEPLOY.md` (soul, "Check every prerequisite once before deploying" — combined with Render if `DEPLOY.md` needs it, never asked item by item). This section covers how to use the connection, and is the safety net if you open this skill without that combined check.
 
-Chỉ dùng khi **chủ nói muốn dùng PAT**, hoặc chủ không kết nối GitHub. File lớn không phải lý do xin PAT: dùng Git Database; một lệnh tạo blob bị từ chối vì kích thước thì báo nguyên văn lỗi cho chủ trước, không tự xin PAT. Gọi `request_credential` với đúng nguyên văn `label: "GitHub PAT"`, `delivery: "file"`, `reason`: "Fine-grained token: đúng tài khoản/org và repo, quyền Contents (Read & write), Metadata (Read); thêm Administration (Read & write) nếu cần tạo repo hoặc đổi topic; hạn tối đa 90 ngày." Token chỉ đọc vào biến cho từng lệnh, không in ra, không ghi vào chat, log, repo, `git config` hay URL remote:
+Use the GitHub tools of the connected app (search for the tool first, then call it; never guess tool names).
+- **No app tools at all** in your turn: your app access is disabled (a bot installed from a package starts this way). Tell the owner exactly one sentence: "Please enable app access for {{agent:bot}} and connect GitHub", then end the turn.
+- App tools exist but GitHub is not connected: send the **Connect GitHub** card, say in one sentence why it is needed, then end the turn.
+- **Never sign in to GitHub through the browser** (a "sign in to github.com" card, the Screen tab, Take control): that hands the whole account to the bot. If GitHub tools are missing, ask the owner to connect GitHub under Apps, or use a PAT (see "Fallback: the owner's PAT"; creating a new repository needs All repositories and Administration Read & write).
+- Common tools: create a repository (`GITHUB_CREATE_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER`, `GITHUB_CREATE_AN_ORGANIZATION_REPOSITORY`), get repository info, commit multiple files (`GITHUB_COMMIT_MULTIPLE_FILES`), Git Database (`GITHUB_GET_A_REFERENCE`, `GITHUB_CREATE_A_BLOB`, `GITHUB_CREATE_A_TREE`, `GITHUB_CREATE_A_COMMIT`, `GITHUB_UPDATE_A_REFERENCE`), topics (`GITHUB_REPLACE_ALL_REPOSITORY_TOPICS`), releases (`GITHUB_CREATE_A_RELEASE`, `GITHUB_LIST_RELEASE_ASSETS`), Actions (`GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT`, `GITHUB_LIST_WORKFLOW_RUNS_FOR_A_REPOSITORY`).
+- A tool reports "not found" or wrong parameters: search for the tool again to get the exact name and parameters, retry once; if it still fails, stop and report the error verbatim.
+- 403 "OAuth App access restrictions": the organization blocks third-party apps. Tell the owner: an org admin goes to GitHub → organization → Settings → Third-party access → OAuth app policy to grant access. Never try to work around it.
+
+## Procedure
+
+Run in the local repository, on the merged base branch, with a clean `git status --short`. The file list to push is `git ls-files` (already filtered by `.gitignore`); never push `artifacts/`, downloaded data, `.venv` or secret files.
+
+1. **Write `DEPLOY.md`** with the inputs above, then run the combined prerequisite check (soul, "Check every prerequisite once before deploying").
+   *Check:* every required input is filled; no secret value appears in the file.
+2. **Target repository**: get the repository info. If it does not exist, create it (after the card) with `private: true` unless `DEPLOY.md` says otherwise, and `auto_init: true`. If the repository already has unrelated history, stop and ask the owner; never overwrite. (Work requested on an existing repository goes through `adlc-git-remote`, not this skill.)
+3. **Check sizes before pushing**: `git ls-files -z | xargs -0 ls -l`. The connected app's tools cannot read files from disk: each file's content must be inline in the call, and one call cannot hold a file larger than about 100 KB. Such files are usually generated (a report page with embedded images, images, build output): deal with them **up front** — remove them from the repository and generate them at build time (e.g. a step in the `Dockerfile`) through the normal flow — then push. Never push halfway and report afterwards.
+4. **Push the code** to the `main` branch on GitHub:
+   - Small repository (up to about 50 text files, under 1 MB in total): one `GITHUB_COMMIT_MULTIPLE_FILES` call, with the message from the last commit of the local base branch.
+   - Larger, many files, heavy files (e.g. an HTML page with a few hundred KB of embedded images) or binaries: **always use the Git Database**, never ask for a PAT. Get ref `heads/main` and the current commit; one blob per file (base64); one tree (mode `100644`, or `100755` for executables); a commit whose parent is the current commit; update the ref (no force). Split into batches if there are many files.
+   - *Check:* the `heads/main` hash on GitHub, and the file count against `git ls-files | wc -l`.
+   - The GitHub history is a new commit; individual local commits are not kept. State this in the report.
+5. **Release with build files** (when `DEPLOY.md` asks): the repository must have `.github/workflows/release.yml` (triggered by `workflow_dispatch` with a `tag` input, `contents: write` permission, builds per the README, zips the result, writes `sha256sum` into `SHA256SUMS`, runs `gh release create` with `GITHUB_TOKEN`). If it is missing, add it through the normal flow first. After the card, call `GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT` and follow the run for at most 15 minutes (at least 30 seconds between checks); on failure, report with the log.
+   *Check:* the release has a zip file (> 0 bytes) and `SHA256SUMS`.
+6. **FCode Market** (when asked): the repository root has `README.md` and `fcode.json` (`name`, `slug`, `version`, `description`, `category`, `stack`, `run`, `env` **variable names only**, `createdBy`; add `demo` only when a real link exists); topics `fcode-app`, `qaci-duo` and one app-type topic; a release with files. If the owner gives the market address, check `<market>/api/apps?refresh=1` and `<market>/api/apps/<owner>/<repo>`.
+7. **Report**: hand the result to `adlc-report` (deployment section). Numbers and links come from real tool results.
+
+## Fallback: the owner's PAT
+
+Use only when **the owner says they want to use a PAT**, or the owner does not connect GitHub. Large files are not a reason to ask for a PAT: use the Git Database; if a blob call is rejected for size, report the error verbatim to the owner first, and do not ask for a PAT on your own. Call `request_credential` with exactly `label: "GitHub PAT"`, `delivery: "file"`, `reason`: "Fine-grained token: the right account/org and repository, Contents (Read & write), Metadata (Read); add Administration (Read & write) if a repository must be created or topics changed; expiry at most 90 days." Read the token into a variable per command only; never print it or write it to chat, logs, the repository, `git config` or a remote URL:
 
 ```bash
-PAT=$(cat "<đường dẫn file bí mật>")
+PAT=$(cat "<secret file path>")
 GIT_AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PAT" | base64 | tr -d '\n')"
 git remote get-url github 2>/dev/null || git remote add github https://github.com/<owner>/<repo>.git
 git -c credential.helper= -c http.extraheader="$GIT_AUTH" push github main
 ```
 
-Luôn có `-c credential.helper=` ở mọi lệnh git chạm tới GitHub: máy có thể đã lưu tài khoản GitHub của người khác (Keychain, credential store); git chỉ được dùng đúng token chủ cấp cho việc này.
+Always pass `-c credential.helper=` on every git command that touches GitHub: the machine may have someone else's GitHub account stored (Keychain, credential store); git must use only the token the owner provided for this work.
 
-401/403: báo chủ một câu, xoá file bằng `rm "<đường dẫn file>"`, rồi gọi lại `request_credential` như trên.
+401/403: tell the owner in one sentence, delete the file with `rm "<secret file path>"`, then call `request_credential` again as above.
+
+## Output
+
+```markdown
+### Deployment — GitHub
+- Repository: https://github.com/<owner>/<repo> (<private|public>)
+- `main` on GitHub: <hash> — <n> files (local `git ls-files`: <n>)
+- History: pushed as a new commit; local commits not preserved
+- Release: <link> — files: <zip>, SHA256SUMS — sha256: <value> | not requested
+- FCode Market: <listing link / API check result> | not requested
+- Tools called: <tool names>
+- Approval cards: <card — owner's answer>
+```
+
+## Quality checklist
+
+- [ ] `DEPLOY.md` written after the merge, no secret values in it
+- [ ] Card answered before creating the repository / first push / public switch / release / FCode Market
+- [ ] No file over ~100 KB sent through app tools; generated files handled before pushing
+- [ ] `heads/main` hash and file count verified against local
+- [ ] Release has a non-empty zip and `SHA256SUMS` (if requested)
+- [ ] Every link and number comes from a real tool result
+- [ ] PAT (if used) never printed or stored; `-c credential.helper=` on every git command
+
+## Guardrails
+
+**Never**
+- Force-push, delete a branch or delete a repository on GitHub.
+- Sign in to GitHub through the browser.
+- Overwrite a repository that has unrelated history.
+- Push `artifacts/`, downloaded data, `.venv` or secret files.
+- Print, repeat or store a PAT or environment variable value.
+- Work around an organization's OAuth app restrictions.
+
+**Ask first** (card through the ask-user tool)
+- Creating a repository or the first push.
+- Switching a repository to public.
+- Creating a release or listing on FCode Market.
+- Anything when the target repository already has unrelated history.
+
+## Example
+
+**Request:** "Merged. Put it on my GitHub as `acme/todo-api`, private, with a v1.0.0 release."
+
+**Response outline:** write `DEPLOY.md` (owner `acme`, repo `todo-api`, private, release `v1.0.0`) → prerequisite check (GitHub connected) → repository not found → card "Create acme/todo-api (private) and push 23 files, 1 commit" with `git diff --stat` → approved → create repository, one `GITHUB_COMMIT_MULTIPLE_FILES` → verify hash and 23 files → `release.yml` present → card for release `v1.0.0` → dispatch workflow, follow run → verify zip and `SHA256SUMS` → report with links, hash, sha256 and tools called.

@@ -1,80 +1,151 @@
 ---
 name: adlc-bugfix
-title: "Quy trình: sửa lỗi"
-description: "Quy trình sửa lỗi: báo lỗi, test tái hiện, sửa, kiểm, merge, báo cáo. Dùng cho việc bugfix."
-triggers: "adlc bugfix, quy trình: sửa lỗi"
+title: "Process: fix a bug"
+description: "Bugfix process run end to end by one agent: triage automated alerts, bug report, reproduce, failing test first, root-cause fix, verify, merge and a Completion report."
+triggers: "adlc bugfix, fix a bug, fix bug, bug report, error alert, regression, quy trình: sửa lỗi, sửa lỗi"
 tags: adlc-craft, internal
 license: Unspecified
 author: QACI Duo
 ---
 
-# Quy trình: sửa lỗi
+# Process: fix a bug
 
-Skill git và **nhánh gốc** của bạn ghi trong mục Môi trường của hướng dẫn hệ thống: `adlc-git-local` (demo cục bộ, nhánh gốc `main`) hoặc `adlc-git-azure` (Azure Repos, vd nhánh gốc `dev`). Dưới đây "nhánh gốc" là nhánh đó. Trên Azure, bước "merge" của Tech Lead là vote approve PR rồi chờ người thật hoàn tất PR trên Azure, và "Mở PR" của engineer là PR thật (skill `adlc-git-azure`).
+You take a bug from report (or automated alert) to a merged, verified fix and a Completion report, doing every phase yourself: Specify → Plan → Implement → Verify → Merge → Report. A subagent (Task/Agent) may write the fix, but you own the root cause, the review and the verdict.
 
-Dùng kèm: `adlc-approval`, skill git của bạn, `adlc-code-review`, `adlc-verify-browser`, `adlc-report`.
+Principles: **an automated alert is not yet a bug** (locate and check it first, step 1), **never fix a bug you have not reproduced**, and **the work is not done without a test that catches exactly this bug**.
 
-Nguyên tắc: **cảnh báo tự động chưa phải bug** (Tech Lead định vị và kiểm tra trước, bước 0), **không sửa lỗi mà chưa tái hiện được**, và **không coi là xong nếu chưa có test bắt đúng lỗi đó**.
+Git and the **base branch** come from the assignment; branch, commit, "open PR" and merge follow `adlc-git-local`.
 
-## PM
+Used with: `adlc-approval`, `adlc-git-local`, `adlc-code-review`, `adlc-ui-preview`, `adlc-verify-browser`, `adlc-report`.
 
-1. **Viết báo lỗi** (thay cho SPEC):
-   - Hiện tượng: người dùng thấy gì, ở đâu.
-   - Bước tái hiện, đánh số. Kèm input cụ thể (file, giá trị) nếu có.
-   - Kết quả mong đợi và kết quả thực tế.
-   - Mức độ: Nghiêm trọng (chặn người dùng, mất dữ liệu) / Cao / Trung bình / Thấp, kèm lý do.
-   - Phạm vi ảnh hưởng: ai, tính năng nào.
-   - Tiêu chí nghiệm thu: AC1 = làm đúng các bước tái hiện thì ra kết quả mong đợi; AC thêm = các hành vi liên quan không bị hỏng.
-   - Thiếu bước tái hiện thì hỏi lại người báo trước khi giao.
-2. Mức Nghiêm trọng thì báo chủ ngay khi nhận. Mọi mức: gửi báo lỗi cho chủ rồi **xin duyệt bằng card "Duyệt báo lỗi"** (skill `adlc-approval`); chỉ giao Tech Lead khi chủ chọn Đồng ý.
-3. Giao Tech Lead qua `coordinate_bots`: "Loại việc: bugfix. Quy trình: skill adlc-bugfix", kèm báo lỗi và `done_when`: "tái hiện được, có test bắt lỗi, đã sửa và merge, test cũ vẫn xanh, có báo cáo".
-4. Kết quả của Tech Lead về: **mở lại skill `adlc-report` (phần PM)** rồi mới trả lời chủ. Gửi đủ 4 phần, chép nguyên văn mọi bảng của Tech Lead, tự kiểm đủ bảng trước khi gửi. Không gửi đoạn tóm tắt.
+## When to use
 
-## Tech Lead
+- `adlc-triage` classified the work as **bugfix**: existing behavior is wrong (crash, wrong data, data loss, broken flow).
+- An automated error arrives (log, alert, webhook) and must be checked before anything is fixed.
 
-### 0. Lỗi tự động gửi tới (log, cảnh báo, webhook): định vị và kiểm tra trước
-Cảnh báo chỉ là **nghi lỗi**, chưa phải bug. Chưa qua bước này thì chưa tạo nhánh, chưa viết test, chưa giao ai.
+**Not for:** new behavior (`adlc-feature`), failures caused by configuration, environment or external services with no code defect (`adlc-chore` or operations), open questions needing comparison (`adlc-research`).
 
-**a. Định vị: lỗi ở đâu, ai nắm**
-- Đọc traceback từ khung **thuộc code của đội** gần lỗi nhất (bỏ qua khung thư viện, runtime): file, hàm, dòng.
-- Ghép file với repo trong mục Môi trường (vd `casanos-fe`, `casanos-be`, `casanos-ai`). Không ghép được (lỗi trong thư viện, hạ tầng, dịch vụ ngoài) thì ghi rõ "ngoài code của đội".
-- Phân vùng: giao diện, API, dữ liệu, AI hay hạ tầng. Từ đó chọn **Software Engineer** hay **AI Engineer**.
-- `git log -n 5 -- <file>` và `git blame -L <dòng>` để biết commit hay PR nào đưa dòng đó vào. Lỗi mới xuất hiện ngay sau một PR thì ghi PR đó (dấu hiệu hồi quy).
-- Phiên bản đang chạy khi lỗi xảy ra (commit, môi trường) so với đầu nhánh gốc.
+## Inputs
 
-**b. Kiểm tra: có phải bug thật không** (ghi kết quả từng mục vào nhật ký)
-1. **Trùng?** Cùng chữ ký lỗi (loại lỗi + file:dòng) đã có nhánh `fix/…`, PR mở hay plan trong thư mục plans? Có thì gộp vào việc đó, báo người đang làm, dừng.
-2. **Đã sửa rồi?** Chạy lại bước tái hiện trên **đầu nhánh gốc**. Không còn lỗi thì tìm commit đã sửa, trả lời "đã sửa ở <commit>", dừng.
-3. **Tái hiện được không?** Chạy đúng lệnh hoặc input trong cảnh báo, **3 lần**. Không lần nào ra thì là "chưa tái hiện được": ghi đã thử gì, xin thêm dữ liệu (input, log quanh đó), dừng. Lúc có lúc không thì ghi "chập chờn" và tìm điều kiện gây ra.
-4. **Hành vi đúng hay sai?** So với README, SPEC, test hiện có, hoặc hành vi trước đây. Ví dụ:
-   - input sai bị từ chối bằng thông báo rõ ràng là **đúng**, không phải bug;
-   - crash, traceback lộ ra người dùng, dữ liệu sai, mất dữ liệu là **bug**.
-5. **Code hay môi trường?** Do thiếu cấu hình hay biến môi trường, hết đĩa, mạng, dịch vụ ngoài chết, dữ liệu bẩn từ nguồn khác thì không phải bug code: phân loại `chore` hoặc vận hành, báo chủ, không mở luồng sửa code.
-6. **Mức độ:** bao nhiêu lần, bao nhiêu người hay tính năng bị ảnh hưởng, có mất dữ liệu không, theo thang của PM (Nghiêm trọng / Cao / Trung bình / Thấp).
+| Input | Required | Default |
+|---|---|---|
+| Symptom: what the user sees, where | Yes | — |
+| Numbered reproduction steps with concrete input (file, values) | Yes | For an alert: the command/input in the alert; otherwise ask the reporter |
+| Expected vs actual result | Yes | — |
+| Repository and base branch | Yes | From the assignment; ask if missing |
+| Traceback / logs / running version (commit, environment) | No | Collected in step 1 |
+| `Approval points:` line in the team brief | No | Missing line = auto |
 
-**c. Kết luận bằng card "Xác nhận lỗi"** (skill `adlc-approval`) gửi chủ. Card gồm:
-- chữ ký lỗi, vị trí (repo, file:dòng, vùng), commit hoặc PR nghi gây ra;
-- kết quả 6 mục kiểm tra;
-- kết luận: **Bug thật** / Không phải bug (lý do) / Trùng với … / Đã sửa ở … / Chưa tái hiện được.
+## Procedure
 
-Lựa chọn của card: "Đồng ý, sửa" / "Không sửa" / "Cần thêm thông tin". Chỉ khi chủ chọn **Đồng ý, sửa** mới làm tiếp từ bước 1. Khi đó báo PM một dòng để PM theo dõi: loại bugfix, mức độ, repo, người sẽ sửa. Kết luận khác thì ghi nhật ký và dừng, không tạo nhánh.
+### Specify
 
-1. Nhận báo lỗi, ghi nhật ký.
-2. **Tái hiện lỗi** trên nhánh gốc hiện tại, đúng theo các bước. Không tái hiện được thì ghi lại đã thử gì, hỏi lại PM, chưa giao sửa.
-3. **Viết hoặc giao viết test bắt lỗi trước**: một test tự động thất bại trên nhánh gốc hiện tại vì đúng lỗi này. Ghi lại lệnh chạy và kết quả đỏ.
-4. **Tìm nguyên nhân gốc**: lỗi nằm ở đâu và vì sao, không chỉ triệu chứng. Ghi vào plan. Kiểm xem lỗi cùng kiểu có ở chỗ khác không.
-5. **Giao sửa** cho engineer, **không tự sửa** dù lỗi nhỏ: thường một engineer là đủ, tên nhánh `fix/<task>`. Phần AI thì giao AI Engineer. Ghi "Loại việc: bugfix. Quy trình: skill adlc-bugfix", nguyên nhân gốc đã tìm được, test bắt lỗi, `done_when`: "test bắt lỗi chuyển xanh, toàn bộ test cũ vẫn xanh, đã báo Lead".
-6. **Review** theo skill `adlc-code-review`, kiểm thêm:
-   - bản sửa nhắm đúng nguyên nhân gốc, không chỉ che triệu chứng (vd bắt ngoại lệ rồi bỏ qua);
-   - test bắt lỗi **đỏ trước khi sửa, xanh sau khi sửa**: tự chạy test đó trên nhánh gốc cũ và trên nhánh;
-   - không đổi hành vi ngoài phạm vi lỗi.
-7. Trước khi merge **xin duyệt bằng card "Duyệt merge"** (skill `adlc-approval`). Đồng ý thì merge, rồi **verify lại đúng các bước tái hiện** (có giao diện thì dùng skill `adlc-verify-browser`), và chạy toàn bộ test để chắc không hồi quy.
-8. **Báo cáo** PM theo skill `adlc-report`. Mục Chất lượng ghi: test bắt lỗi (tên, đỏ → xanh), nguyên nhân gốc một câu, toàn bộ test.
+1. **Automated error (log, alert, webhook): locate and check it first.** An alert is only a **suspected bug**. Until this step concludes, create no branch and write no test. Record each result in the progress log (`adlc-report`).
 
-## Engineer
+   **a. Locate: where is it, which area**
+   - Read the traceback from the frame **in the team's own code** closest to the error (skip library and runtime frames): file, function, line.
+   - Match the file to a repository from the assignment (e.g. `casanos-fe`, `casanos-be`, `casanos-ai`). If it cannot be matched (library, infrastructure, external service), record "outside the team's code".
+   - Area: UI, API, data, AI or infrastructure. AI-area fixes follow the AI rules in `adlc-code-review`.
+   - `git log -n 5 -- <file>` and `git blame -L <line>` to find which commit or PR introduced that line. If the error appeared right after a PR, record that PR (regression signal).
+   - Compare the version running when it failed (commit, environment) with the head of the base branch.
 
-1. Nhận việc sửa: đọc báo lỗi, nguyên nhân gốc Tech Lead đã tìm, test bắt lỗi.
-2. Tự chạy test bắt lỗi trên nhánh mới, thấy nó **đỏ** trước khi sửa.
-3. Sửa đúng nguyên nhân gốc, phạm vi nhỏ nhất có thể. Thấy nguyên nhân gốc khác với Tech Lead nói thì báo lại trước khi sửa lớn.
-4. Chạy lại: test bắt lỗi **xanh**, toàn bộ test cũ vẫn xanh.
-5. Commit xong và test xanh (đổi giao diện thì xem trước theo skill `adlc-ui-preview`) thì **xin duyệt bằng card "Duyệt push"** (skill `adlc-approval`). Đồng ý thì "Mở PR" theo skill git của bạn: ghi nguyên nhân, cách sửa, test đỏ → xanh, rồi kết thúc lượt.
+   **b. Check: is it a real bug?**
+   1. **Duplicate?** Same error signature (error type + file:line) already has a `fix/…` branch, an open PR or a plan in the plans folder? Then merge it into that work, note it there, and stop.
+   2. **Already fixed?** Rerun the reproduction on the **head of the base branch**. If it no longer fails, find the fixing commit, reply "fixed in <commit>", and stop.
+   3. **Reproducible?** Run the exact command or input from the alert **3 times**. If it never fails: "not reproduced yet" — record what you tried, ask for more data (input, surrounding logs), and stop. If it fails intermittently, record "flaky" and find the triggering condition.
+   4. **Correct or wrong behavior?** Compare against the README, SPEC, existing tests or past behavior. For example: invalid input rejected with a clear message is **correct**, not a bug; a crash, a traceback shown to users, wrong data or data loss is **a bug**.
+   5. **Code or environment?** Missing configuration or environment variables, full disk, network, a dead external service, or dirty data from another source is not a code bug: classify as `chore` or operations, tell the owner, and do not open a code-fix flow.
+   6. **Severity:** how often, how many users or features affected, any data loss, on the scale Critical / High / Medium / Low.
+
+   **c. Conclude** with one of: **Real bug** / Not a bug (reason) / Duplicate of … / Fixed in … / Not reproduced yet. Anything other than **Real bug**: log it, tell the owner, stop, create no branch.
+2. **Write the bug report** (it is the SPEC for this work):
+   - Symptom: what the user sees, where.
+   - Numbered reproduction steps with concrete input.
+   - Expected result and actual result.
+   - Severity: Critical (blocks users, loses data) / High / Medium / Low, with the reason.
+   - Impact: who, which features.
+   - For an alert: error signature, location (repo, file:line, area), suspected commit or PR, and the six check results from step 1b.
+   - Acceptance criteria: AC1 = following the reproduction steps gives the expected result; further ACs = related behavior is not broken.
+   - `done_when`: "reproduced, a test catches the bug, fixed and merged, existing tests still green, Completion report sent".
+   If reproduction steps are missing, ask the reporter (`NEEDS INPUT:`) before going on.
+3. **Critical** severity: tell the owner as soon as you have it. Any severity: send the bug report, then pass the **SPEC approval** point (`adlc-approval`). When it goes to the owner as a card, offer "Approve, fix" / "Don't fix" / "Need more information"; continue only on **Approve, fix**. When self-approved, log "Self-approved: SPEC — <reason> — <evidence>". **Exception — automated alerts:** when the bug came from step 1 (log, alert, webhook), this point is always sent to the owner as the **Bug confirmation** card (same three options), whatever the `Approval points:` line says; an alert nobody has confirmed is never self-approved.
+
+### Plan
+
+4. **Reproduce** on the current base branch, following the steps exactly. If it does not reproduce, record what you tried, ask the owner or reporter, and do not fix.
+5. **Write the bug-catching test first**: an automated test that fails on the current base branch because of exactly this bug. Record the command and the red result.
+6. **Find the root cause**: where and why, not just the symptom. Write it in the plan (`sharedBotFolder/plans/<repo>-<task>/`). Check whether the same kind of defect exists elsewhere.
+7. Plan the fix: usually one branch `fix/<task>`, the root cause, the bug-catching test, and `done_when` for the branch: "bug-catching test turns green, all existing tests still green". Pass the **Plan approval** point (`adlc-approval`).
+   *Check:* the test is red on the base branch for the stated reason, not for an unrelated error.
+
+### Implement
+
+8. On the new branch, run the bug-catching test yourself and see it **red** before fixing.
+9. Fix the root cause with the smallest possible scope. If the root cause turns out different from step 6, update the plan before any large change.
+10. Rerun: the bug-catching test is **green**, all existing tests are still green.
+11. Once committed and green (UI change: preview per `adlc-ui-preview`), pass the **Push approval** point (`adlc-approval`), then "open PR" per `adlc-git-local` recording the cause, the fix, and the test red → green.
+
+### Verify
+
+12. **Self-review** per `adlc-code-review`, plus:
+    - the fix targets the root cause, not just the symptom (e.g. catching and swallowing the exception);
+    - the bug-catching test is **red before the fix and green after**: run it yourself on the old base branch and on the branch;
+    - no behavior change outside the bug's scope.
+    Fix findings on the same branch and review again.
+
+### Merge
+
+13. Pass the **Merge approval** point (`adlc-approval`), then merge. **Re-verify using exactly the reproduction steps** (UI: `adlc-verify-browser`), and run the tests per the soul's "Running tests" to confirm no regression.
+
+### Report
+
+14. **Reopen `adlc-report`** and send the full Completion report. The Quality section records: the bug-catching test (name, red → green), the root cause in one sentence, and the full test results. Include every self-approval line.
+
+## Output
+
+```
+Bug: <signature or symptom> — Severity: <Critical/High/Medium/Low>
+Location: <repo> <file:line> (<area>) — suspected cause: <commit/PR or none>
+Check results: duplicate <no> | already fixed <no> | reproduced <3/3> | behavior <wrong> | code/env <code> | severity <reason>
+Root cause: <one sentence>
+Bug-catching test: <test id> — base: Fail (red) → branch: Pass (green) — command: <cmd>
+Full tests: <passed>/<total>, skipped <n> (<reason>) — source: <command/file>
+AC1 (repro steps): Pass — Verified by me: <command + output>
+```
+
+All of this sits inside the `adlc-report` Completion report.
+
+## Quality checklist
+
+- [ ] For an alert, all six checks are recorded before any branch exists.
+- [ ] The bug was reproduced on the base branch before fixing.
+- [ ] The bug-catching test is committed on the branch, red before and green after, run by you.
+- [ ] The fix addresses the root cause; similar defects elsewhere were checked.
+- [ ] Existing tests are still green; none deleted, disabled or loosened.
+- [ ] Reproduction steps re-run after merge, with real output.
+- [ ] Every approval point passed by card or logged as self-approved.
+
+## Guardrails
+
+**Never**
+- Fix an alert before locating and checking it, or fix anything you could not reproduce.
+- Merge without a test that catches exactly this bug.
+- Hide a symptom (swallow an exception, special-case the input) instead of fixing the cause.
+- Change behavior outside the bug's scope.
+- Open a code-fix flow for an environment or external-service failure.
+
+**Ask first**
+- A root cause that requires an architecture change or touches 3 or more modules (consider reclassifying as feature).
+- Missing reproduction steps or data (ask the reporter).
+- Fixing related defects found elsewhere (propose them as separate work).
+
+## Example
+
+**Request:** "Export button downloads an empty CSV when a filter is active."
+
+**Outline of the response:**
+1. Bug report: steps (open orders, filter status=paid, click Export), expected rows = 12, actual 0; severity High; AC1 repro gives 12 rows, AC2 unfiltered export unchanged. SPEC approval self-approved and logged.
+2. Reproduced 3/3; test `test_export_respects_filter` red on `main`; root cause: export query ignores the filter params.
+3. Branch `fix/export-filter`, test green, full tests green; Push approval; self-review (red on old base, green on branch).
+4. Merge approval, merge, repro re-run gives 12 rows.
+5. Completion report with the red → green test, root cause sentence and test totals.
