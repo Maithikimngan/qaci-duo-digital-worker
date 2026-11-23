@@ -798,6 +798,8 @@ export function workerLibraryFiles(markdown, playbooksByName) {
   const entry = {
     slug: id,
     name: worker.name,
+    // The release QACI Duo compares with each installed Digital Worker's, to offer its in-place update.
+    release: String(worker.release),
     summary: oneLine(worker.tagline, 300),
     category: worker.category,
     // No `outcome`: the Templates card then shows the summary, which is the worker's tagline.

@@ -259,6 +259,7 @@ test("the published library has the files the catalog points at, skills copied b
   assert.equal(entry.members, 1);
   assert.equal(entry.outcome, undefined, "the Templates card shows the tagline");
   assert.equal(entry.summary, splitPackage(worker).metadata.tagline);
+  assert.equal(entry.release, JSON.parse(byPath.get(entry.package)).package.release, "the catalog names the release QACI Duo updates to");
   assert.equal(byPath.get("teams/sample-worker/skills/sample-playbook/SKILL.md"), playbook);
   const manifest = JSON.parse(byPath.get(entry.manifest));
   assert.deepEqual(manifest.team.room.defaultResponder, { kind: "member", member: "sample-worker" });
