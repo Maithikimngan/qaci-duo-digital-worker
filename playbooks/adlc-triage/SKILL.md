@@ -24,7 +24,7 @@ The first step of every piece of work the owner assigns (`/dw` = the owner assig
 | Input | Required | Default |
 |---|---|---|
 | The owner's request | Yes | — |
-| Repository and base branch | Yes | Ask the owner if missing. A GitHub URL (`https://github.com/<owner>/<repo>`) means repository mode **GitHub**: use `adlc-git-remote` instead of the local merge |
+| Repository and base branch | Yes | Ask the owner if missing. A GitHub URL (`https://github.com/<owner>/<repo>`) or Azure DevOps URL (`https://dev.azure.com/<org>/<project>/_git/<repo>`) means repository mode **GitHub** / **Azure DevOps**: use `adlc-git-remote` instead of the local merge |
 | Reproduction steps (bugfix) | For bugfix | Ask the owner |
 | Paper link / attached PDF / QACI Data search (paper-prototype) | For paper-prototype | Ask the owner |
 
@@ -62,7 +62,7 @@ When unsure, treat it as normal size.
 3. If information is missing to classify or to write the requirement (e.g. a bug report without reproduction steps, unclear repository, a paper without a clear link or file), **ask the owner**; do not guess.
 4. Judge the size (section Small task).
 5. Tell the owner: work type, a one-sentence reason, the skill you will use.
-6. If the request contains a GitHub repository link, record "Repository mode: GitHub (`adlc-git-remote`)" too; the process skill then clones, pushes a branch and opens a PR instead of merging locally.
+6. If the request contains a GitHub or Azure DevOps repository link, record "Repository mode: GitHub (`adlc-git-remote`)" or "Repository mode: Azure DevOps (`adlc-git-remote`)" too; the process skill then clones, pushes a branch and opens a PR instead of merging locally.
 7. Record the type and skill at the top of the progress log (`adlc-report`) and the plan folder `sharedBotFolder/plans/<repo>-<task>/`, e.g. "Work type: bugfix. Process: skill adlc-bugfix." or "Work type: paper-prototype. Process: skill adlc-paper-prototype."
 8. Open that process skill and run it end to end yourself: Specify → Plan → Implement → Verify → Merge → Report. *Check:* reread the skill now; do not work from memory of a previous run.
 

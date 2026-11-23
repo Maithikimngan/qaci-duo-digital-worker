@@ -57,7 +57,7 @@ Always pass `-c credential.helper=` on every git command that touches Azure DevO
 ## Procedure
 
 1. **Write `DEPLOY.md`** with the inputs above (no prerequisite to ask in advance for Azure DevOps), then request the PAT as described.
-2. **Target repository**: `curl -s -H "$AUTH" "https://dev.azure.com/<org>/<project>/_apis/git/repositories/<repo>?api-version=7.1"` to check whether it exists. If not and `DEPLOY.md` asks to create it (after the card): `curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" -d '{"name":"<repo>"}' "https://dev.azure.com/<org>/<project>/_apis/git/repositories?api-version=7.1"`.
+2. **Target repository** (work requested on an existing repository goes through `adlc-git-remote`, not this skill): `curl -s -H "$AUTH" "https://dev.azure.com/<org>/<project>/_apis/git/repositories/<repo>?api-version=7.1"` to check whether it exists. If not and `DEPLOY.md` asks to create it (after the card): `curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" -d '{"name":"<repo>"}' "https://dev.azure.com/<org>/<project>/_apis/git/repositories?api-version=7.1"`.
 3. **Push the code** to `main` (after the card for the first push):
    ```bash
    git remote add azure "https://dev.azure.com/<org>/<project>/_git/<repo>" 2>/dev/null \

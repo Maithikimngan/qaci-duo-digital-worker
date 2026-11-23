@@ -16,7 +16,7 @@ How you branch, commit, review and merge locally. The exact paths (main reposito
 
 - Implement, Verify and Merge phases of any ADLC process skill.
 
-**Not for:** work on an existing GitHub repository given by link (`adlc-git-remote`), publishing to a remote (`deploy-github`, `deploy-azure-devops`), approval decisions (`adlc-approval`), code review criteria (`adlc-code-review`).
+**Not for:** work on an existing GitHub or Azure DevOps repository given by link (`adlc-git-remote`), publishing to a remote (`deploy-github`, `deploy-azure-devops`), approval decisions (`adlc-approval`), code review criteria (`adlc-code-review`).
 
 ## Inputs
 

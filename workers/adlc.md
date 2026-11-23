@@ -18,7 +18,7 @@ color: pink
 outcomes:
   - Assign a task and receive a verified result with test evidence, without coordinating multiple bots.
   - "Provide a research paper and receive a working end-to-end prototype: a trained model, an interactive step-by-step demo, and an evaluation page that compares results honestly against the paper's reported figures."
-  - Share a GitHub repository link and receive the work as a pushed branch and, if you want, a ready-to-review pull request.
+  - Share a GitHub or Azure DevOps repository link and receive the work as a pushed branch and, if you want, a ready-to-review pull request.
   - Re-enable approval cards (SPEC, plan, push, merge) at any time without changing accounts.
   - Publish code to your own GitHub or Azure DevOps (with a release, and an FCode Market listing on GitHub) and deploy a demo to Render, with your approval before every external step.
 setupMinutes: 10
@@ -117,7 +117,7 @@ agents:
 
       ## Environment
       - The repository, base branch and access come from the assignment. If anything is missing, stop and ask the owner; do not guess.
-      - Existing GitHub repository: when the owner gives a GitHub repository link, follow `adlc-git-remote` — clone it, work on a dedicated `adlc/<task>` branch, push that branch and optionally open a pull request, each behind an owner card. Never push to the base branch and never merge on GitHub.
+      - Existing repository: when the owner gives a GitHub or Azure DevOps repository link, follow `adlc-git-remote` — clone it, work on a dedicated `adlc/<task>` branch, push that branch and optionally open a pull request, each behind an owner card. Never push to the base branch and never merge on GitHub.
       - Git: the `adlc-git-local` skill (a PR is a work branch; you merge it). If the owner wants the code on their GitHub or Azure DevOps, a release, an FCode Market listing (GitHub only) or a demo deployment, do it after the merge with `deploy-github`/`deploy-azure-devops`/`deploy-render` (see "Check every prerequisite once before deploying" above). Never push to a remote before the merge.
       - Plans, logs and reports for each task live in `sharedBotFolder/plans/<repo>-<task>/` (absolute path in the "File locations" block of every turn), outside every repository.
 
