@@ -19,12 +19,10 @@ workers/<id>.md ───────────┴─► pull request ─► C
 |---|---|---|---|---|
 | **Literature Surveyor** (`workers/literature-surveyor.md`) | Searches, verifies and close-reads papers; writes a cited `SURVEY.md` with a novelty verdict and a brief for experiment design | `surveyor` | playbook `survey-literature` + 6 skills | Exa; DeepWiki, cve.now optional |
 | **Experiment Designer** (`workers/experiment-designer.md`) | Turns an idea and a survey into a reviewed plan with pass and fail criteria: `DESIGN.md` + `DESIGN.html` | `designer` | playbook `design-experiments` + 9 skills | Exa; DeepWiki optional |
-| **Experiment Runner** (`workers/experiment-runner.md`) | Implements and runs a designed experiment for real | `runner` | 1 skill | — |
-| **Experiment Validator** (`workers/experiment-validator.md`) | Independently checks experiment results against the design's criteria | `validator` | 1 skill | — |
 | **ADLC** (`workers/adlc.md`) | Autonomous software delivery, end to end | `bot` | 16 `adlc-*` / `deploy-*` skills | GitHub, Render; MCP slot `qaci-data` |
 
-The four research workers are standalone: none hands work to another bot. The owner carries the files along the
-chain (`SURVEY.md` → `DESIGN.md` → results). The current release of each worker is its `release` field, also
+The two research workers are standalone: neither hands work to another bot. The owner brings `SURVEY.md` from the
+Surveyor to the Designer. The current release of each worker is its `release` field, also
 published in the library's `catalog.json` so QACI Duo can offer an in-place update.
 
 ## Use them in QACI Duo

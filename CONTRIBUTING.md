@@ -13,8 +13,8 @@ Thank you for helping QACI Duo's Digital Workers get better at real work.
 
 A playbook is **one procedure that produces a result** — "verify a reference list", "design the experiments". A
 worker is a **role** that carries several of them — "Literature Surveyor". If you are describing a role, you are
-writing a worker. In the research workflow each step is one standalone worker (Surveyor → Designer → Runner →
-Validator), and the owner carries the files from one to the next.
+writing a worker. In the research workflow each step is one standalone worker (Surveyor → Designer), and the owner
+carries the files from one to the next.
 
 ### Playbook or skill?
 
