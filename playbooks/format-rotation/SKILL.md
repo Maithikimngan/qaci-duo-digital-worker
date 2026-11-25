@@ -1,7 +1,7 @@
 ---
 name: format-rotation
 title: Choose the post format from real performance
-description: Before drafting, read the last 14 days of performance by format and channel, use the best format 70% of the time and a less-used one 30%, never three in a row, and write the reason with real numbers.
+description: Before drafting, read the last 14 days of performance by format and channel, use the best format 70% of the time and a less-used one 30%, at most two posts in a row with the same format on a channel, and write the reason with real numbers.
 triggers: format rotation, which format, choose a format, best performing format, format mix
 tags: marketing, social-media, analytics, formats
 license: Unspecified
@@ -36,8 +36,8 @@ numbers so the owner can check it.
 3. **Pick the format** with this rule, kept in `marketing/scripts/rotation.json` as a running count per channel:
    - 70% of posts use the best-scoring format; 30% try a less-used format (the one with the fewest posts in 14 days).
      Use the running count: if fewer than 30% of the last 10 posts on the channel were tries, this post is a try.
-   - **Never the same format more than 2 posts in a row on one channel**: if the last two posts used it, pick the
-     next best.
+   - **At most 2 posts in a row with the same format on one channel** (never 3): if the last two posts on the
+     channel used it, pick the next best. This is the one rotation rule; every other skill points here.
    - A format with **fewer than 2 measured posts** has a score that is a hint only: say so, and do not call it best.
    - `deep-dive` only on Facebook and LinkedIn.
 4. **Write the reason** in the post note with the real numbers, for example:
@@ -46,12 +46,12 @@ numbers so the owner can check it.
 
 ## Output
 
-One line in the post note: `Format: <format> (<best|try|forced by no-3-in-a-row>; <numbers with date range>)`.
+One line in the post note: `Format: <format> (<best|try|forced by the max-2-in-a-row rule>; <numbers with date range>)`.
 
 ## Quality checklist
 
 - [ ] Numbers in the reason come from the queue or tools, with the date range.
-- [ ] No format three times in a row on one channel.
+- [ ] At most 2 posts in a row with the same format on one channel.
 - [ ] Under 2 measured posts is labelled a hint.
 
 ## Guardrails

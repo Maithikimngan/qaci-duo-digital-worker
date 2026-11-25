@@ -2,7 +2,7 @@
 name: write-video-script
 title: Write a short-video script (TikTok, Reels)
 description: Write the week's TikTok or Reels script for a person to film, with a hook in the first 2 seconds, one idea, on-screen text and a caption, and queue the finished video like any post when the file arrives.
-triggers: tiktok script, reels script, video script, short video, write a script, next weeks tiktok, script for reels, short-form video
+triggers: tiktok script, reels script, video script, short video, write a script, next week s tiktok, script for reels, short-form video
 tags: marketing, social-media, video, tiktok
 license: Unspecified
 author: QACI Duo
@@ -42,7 +42,7 @@ with sources behind every number.
 4. **Save** to `marketing/scripts/video-<YYYY-MM-DD>.md` and add a `draft` row to `marketing/QUEUE.md`.
 5. **When the video file arrives:** save it to `marketing/videos/`, check it matches the script's caption and claims,
    and hand it to `publish-social-post` (approval of the exact caption and file first). TikTok via app uploads to
-   drafts only (`TIKTOK_UPLOAD_VIDEO`); the owner publishes from the TikTok app.
+   drafts only (`TIKTOK_UPLOAD_VIDEO` with `publish: false`, never `true`); the owner publishes from the TikTok app.
 
 ## Output
 

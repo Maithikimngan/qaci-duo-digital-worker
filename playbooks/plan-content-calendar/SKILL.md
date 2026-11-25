@@ -1,7 +1,7 @@
 ---
 name: plan-content-calendar
 title: Plan a month of social media content
-description: Given the product, target audience, content pillars and the month's goals, hand back CALENDAR.md with 3 posts per week per channel, each with angle, pillar, format, draft copy, hashtags, image brief and suggested time.
+description: Given the product, target audience, content pillars and the month's goals, hand back CALENDAR.md with 3 posts per week per channel, week 1 as full drafts and weeks 2 to 4 as outlines with angle, pillar, format, image brief and time.
 triggers: content calendar, content plan, plan content, plan next month, plan the month, social media plan, posting schedule, editorial calendar, plan posts, content for next month
 tags: marketing, social-media, planning, calendar
 license: Unspecified
@@ -10,8 +10,9 @@ author: QACI Duo
 
 # Plan a month of social media content
 
-Turns the brief into a month of posts the team can review in one file. Every item is a real draft that already
-follows the brand's facts, formats and voice, so approving the calendar is quick.
+Turns the brief into a month of posts the team can review in one file. Week 1 is written in full, following the
+brand's facts, formats and voice; weeks 2 to 4 are outlines, drafted in full one week at a time so a run stays short
+and each week can use the latest results.
 
 ## When to use
 
@@ -44,11 +45,15 @@ Ask once, all together. Save the answers to `marketing/BRIEF.md` and reuse them 
 3. **Assign pillars** so the month hits the target share per channel (round to the nearest post; show the planned
    share vs target in the summary).
 4. **Assign formats** with the `format-rotation` skill (read its SKILL.md; the exact path is in your Imported skills
-   list) using the last 14 days of results, and the rules: `deep-dive` only on Facebook and LinkedIn; **no two posts
-   in a row with the same format on one channel**. Without measured data, rotate through the formats and say so.
-5. **Draft each item.** For each slot open, in order: `expert-knowledge` (one topic file, the 5-step depth recipe),
-   `post-formats` (the format's required parts), `brand-facts` (company facts, `[Owner fills: …]` for gaps),
-   `fact-check` (claims with URL and verbatim quote), and `plain-writing` (channel reader and voice). Channel lengths:
+   list) using the last 14 days of results, and its rules: `deep-dive` only on Facebook and LinkedIn; **at most 2
+   posts in a row with the same format on one channel**. Without measured data, rotate through the formats and say
+   so.
+5. **Draft week 1 in full; outline weeks 2 to 4.** Every item gets angle, pillar, format, topic and time. Only
+   week 1's items get copy now; weeks 2 to 4 get `Copy: outline only` and are drafted later, one week at a time, when
+   the owner asks ("draft week 2") or when `publish-social-post` reaches an outline. To draft an item, open, in
+   order: `expert-knowledge` (one topic file, the 5-step depth recipe), `post-formats` (the format's required parts),
+   `brand-facts` (company facts, `[Owner fills: …]` for gaps), `fact-check` (claims with URL and verbatim quote), and
+   `plain-writing` (channel reader and voice). Channel lengths:
    Facebook 80–200 words; Instagram short with hashtags; LinkedIn 150–250 words, max 3 hashtags; Threads ≤500
    characters with 3–4 sourced data points; TikTok/Reels: a one-line idea for `write-video-script`.
    News slots are left as "news slot: filled on the day by `daily-news-post`"; never pre-write news.
@@ -59,8 +64,9 @@ Ask once, all together. Save the answers to `marketing/BRIEF.md` and reuse them 
 8. **Write `marketing/CALENDAR.md`** (layout below), add every item to `marketing/QUEUE.md` with status `draft` (or
    `blocked` if it has `[Owner fills`), and attach CALENDAR.md with `attach_file`.
 9. **Optional export.** If the owner asks and Google Sheets is connected, export the table with
-   `GOOGLESHEETS_CREATE_GOOGLE_SHEET1` (a new sheet) and `GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND` (`spreadsheet_id`,
-   range, rows). Load them through `COMPOSIO_SEARCH_TOOLS` and take parameter names from the schema it returns. Not
+   `GOOGLESHEETS_CREATE_GOOGLE_SHEET1` (`title`; gives the spreadsheet id), `GOOGLESHEETS_GET_SHEET_NAMES`
+   (`spreadsheet_id`) and `GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND` (`spreadsheetId`, `range` = a sheet name it
+   returned, `values` = rows, `valueInputOption: "RAW"`). Load them through `COMPOSIO_SEARCH_TOOLS` and take parameter names from the schema it returns. Not
    connected: say so in one sentence and skip.
 
 ## Output
@@ -83,14 +89,18 @@ Hashtags: …
 Image brief: …
 Claims: claims/<post-id>.json (4 sourced) | Facts used: F02, F05
 Format reason: …
+
+## Week 2 (outlines; say "draft week 2" to write them)
+| # | Date / time | Channel | Pillar | Format | Topic | Angle | Image brief |
 ```
 
 ## Quality checklist
 
 - [ ] 3 posts per week per connected channel; max 1 per channel per day.
 - [ ] Pillar share within one post of target per channel.
-- [ ] No two consecutive posts with the same format on a channel; `deep-dive` only on FB/LI.
-- [ ] Every item has angle, pillar, format, copy, hashtags, image brief, time, claims file.
+- [ ] At most 2 posts in a row with the same format on a channel; `deep-dive` only on FB/LI.
+- [ ] Every item has angle, pillar, format, image brief and time; week 1 items also have copy, hashtags and a claims
+  file; weeks 2 to 4 say `outline only`.
 - [ ] Items with `[Owner fills` are `blocked` and listed.
 
 ## Guardrails
@@ -109,5 +119,6 @@ Format reason: …
 Minh City."
 
 **Response outline:** Asks once for pillars, goals and channels (defaults offered). Writes CALENDAR.md: 4 weeks ×
-3 channels × 3 posts = 36 items, pillar share table, formats rotated with the reason, 8 news slots left for the day,
-2 items blocked on `[Owner fills: subscription price]`. Attaches the file and lists what the owner must fill.
+3 channels × 3 posts = 36 items: week 1's 9 items drafted in full, 27 outlines for weeks 2 to 4, pillar share
+table, formats rotated with the reason, 8 news slots left for the day, 2 items blocked on `[Owner fills: subscription
+price]`. Attaches the file, lists what the owner must fill, and offers "draft week 2" for later.

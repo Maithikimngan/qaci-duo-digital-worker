@@ -2,7 +2,7 @@
 name: daily-news-post
 title: Write today's post from the news
 description: Once a day, find a qualifying news hook, pick the format from real performance, draft the post with the depth recipe and sourced claims, rewrite it in the owner's voice, log it in NEWS_LOG.md and put it in the approval queue.
-triggers: post from the news, todays post, daily post, write todays post, news post, post of the day, daily news post
+triggers: post from the news, today s post, daily post, write today s post, news post, post of the day, daily news post
 tags: marketing, social-media, news, writing
 license: Unspecified
 author: QACI Duo
@@ -22,19 +22,25 @@ honestly labelled as a knowledge post when no news qualifies). It never publishe
 
 | Input | Required | Default |
 |---|---|---|
-| Channel(s) for today | no | the calendar's slots for today; none: Facebook |
+| Channel(s) for today | no | the channels with a **news slot** today in `marketing/CALENDAR.md`; no calendar: Facebook on Mon, Wed and Fri only |
 | Brief, facts, pillars | yes | `marketing/BRIEF.md`, `marketing/FACTS.md` (ask once if missing) |
 
 ## Procedure
 
 Open each skill named below when you reach it (read its SKILL.md; the exact path is in your Imported skills list).
 
-1. **Check today's limit.** In `marketing/QUEUE.md`, a channel that already has a post published or approved for
-   today gets none. A channel paused in `marketing/LOG.md` gets a draft but is flagged "paused until <date>".
+1. **Check today's slots.** This skill fills the calendar's news slots; it never adds posts beyond the calendar's
+   3 per week per channel.
+   - A channel with no news slot today gets nothing. When **no channel** has one, reply in one line "No news slot
+     today; next: <channel> <date>." and stop (the daily routine does this on most days).
+   - The owner asked directly and today has no slot: use the channel's next empty slot this week (say which one); if
+     the channel already has 3 posts this week, say so and ask before adding one.
+   - In `marketing/QUEUE.md`, a channel that already has a post published or approved for today gets none. A channel
+     paused in `marketing/LOG.md` gets a draft but is flagged "paused until <date>".
 2. **Find the hook** with `news-hook`. Result: one item that passed the four tests and the pillar it turns to, or
    "no qualifying news".
 3. **Pick the format** with `format-rotation` for each channel; with a news item the usual choice is `news`, but the
-   no-three-in-a-row rule wins.
+   rotation rule (at most 2 in a row with the same format) wins.
 4. **Draft** with `post-formats` and `expert-knowledge` (one topic file, the 5-step depth recipe). With a news item:
    the first 1–2 sentences are the news, with its date and source; then turn to the pillar. With no news: write a
    knowledge post and say in the note "No qualifying news today (window …); knowledge post."
@@ -47,7 +53,8 @@ Open each skill named below when you reach it (read its SKILL.md; the exact path
    with status `awaiting-approval` (or `blocked` if `[Owner fills` is in it) and the suggested time. Show the owner
    the preview: final text per channel, image brief, the claims list (claim, url, quote), the format reason and the
    facts used. Ask with the ask-user tool: "Approve this exact text for <channel> at <time>?" Approval moves it to
-   `publish-social-post`.
+   `publish-social-post`, which asks whether to keep it for <time> (needs the routine "Publish approved posts that
+   are due" on) or post it now.
 
 ## Output
 
@@ -62,7 +69,7 @@ NEWS_LOG.md: 1 row added
 ## Quality checklist
 
 - [ ] News passed the four tests, or the post says it is a knowledge post.
-- [ ] Format reason has real numbers; no three in a row.
+- [ ] Format reason has real numbers; at most 2 in a row with the same format.
 - [ ] Every claim sourced; no `[Owner fills` in a post sent for approval.
 - [ ] NEWS_LOG.md row written; QUEUE.md rows added.
 - [ ] Nothing was published.
@@ -72,7 +79,7 @@ NEWS_LOG.md: 1 row added
 **Never**
 - Publish or schedule without the owner's approval of the exact text.
 - Pass old news off as new, or comment on politics.
-- Put more than 1 post per channel per day in the queue.
+- Put more than 1 post per channel per day in the queue, or more than the calendar's posts per week.
 
 **Ask first**
 - Publishing (always), using a competitor's news critically.

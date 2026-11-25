@@ -36,13 +36,19 @@ missing: its numbers are "not measured (app not connected)"; carry on with the r
 
 | Need | Tool |
 |---|---|
-| Page reach and engagement | `FACEBOOK_GET_PAGE_INSIGHTS` (page id, metrics, period, since, until) |
-| Facebook posts in range | `FACEBOOK_GET_PAGE_POSTS`, then `FACEBOOK_GET_POST_INSIGHTS` per post |
-| Instagram posts in range | `INSTAGRAM_GET_USER_MEDIA`, then `INSTAGRAM_GET_POST_INSIGHTS` per post |
+| Facebook page totals | `FACEBOOK_GET_PAGE_INSIGHTS` (`page_id`, `metrics: "page_total_media_view_unique,page_post_engagements"`, `period: "day"`, `since`, `until`) |
+| Facebook posts in range, with engagement | `FACEBOOK_GET_PAGE_POSTS` (`page_id`, `since`, `until`, `fields: "id,message,created_time,permalink_url,reactions.summary(true),comments.summary(true),shares"`): engagements = reactions total + comments total + shares count |
+| Facebook post reach | `FACEBOOK_GET_POST_INSIGHTS` (`post_id`, `metrics: "post_total_media_view_unique"`) per post: unique viewers, used as reach |
+| Instagram posts in range | `INSTAGRAM_GET_IG_USER_MEDIA` (`ig_user_id: "me"`, `since`, `until` as Unix timestamps), then `INSTAGRAM_GET_IG_MEDIA_INSIGHTS` (`ig_media_id`, `metric: ["reach", "likes", "comments", "shares", "saved", "total_interactions"]`) per post |
 | Instagram account totals | `INSTAGRAM_GET_USER_INSIGHTS` |
 | Threads (optional) | `THREADS_LIST_MY_POSTS`, `THREADS_GET_POST_INSIGHTS` |
 | Website traffic from social (optional) | `GOOGLE_ANALYTICS_LIST_ACCOUNT_SUMMARIES` (property id), `GOOGLE_ANALYTICS_RUN_REPORT` (date range; dimensions `sessionSource`, `sessionMedium`; metrics `sessions`, `engagedSessions`) |
-| Export (optional) | `GOOGLESHEETS_CREATE_GOOGLE_SHEET1`, `GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND` |
+| Export (optional) | `GOOGLESHEETS_CREATE_GOOGLE_SHEET1` (`title`), `GOOGLESHEETS_GET_SHEET_NAMES` (`spreadsheet_id`), `GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND` (`spreadsheetId`, `range` = a sheet name it returned, `values` = rows, `valueInputOption: "RAW"`) |
+
+Meta removed the Facebook post metrics `post_engagements`, `post_impressions`, `post_impressions_unique`,
+`post_clicks` and `post_engaged_users` on 15 November 2025: never request them. Facebook engagement comes from the
+post's own reaction, comment and share counts. Do not use the deprecated `INSTAGRAM_GET_USER_MEDIA` or
+`INSTAGRAM_GET_POST_INSIGHTS`.
 
 ## Procedure
 
@@ -53,7 +59,8 @@ missing: its numbers are "not measured (app not connected)"; carry on with the r
    *Check:* each number in the report traces to one raw reading. Nothing estimated, averaged from memory, or copied
    from an earlier report.
 3. **Update `marketing/QUEUE.md`** with each published post's reach and engagements (used by `format-rotation`).
-4. **Compute:** per channel reach, engagements, engagement rate (engagements / reach); per format per channel: posts,
+4. **Compute:** per channel reach, engagements, engagement rate (engagements / reach; on Facebook, reach is unique
+   viewers from `post_total_media_view_unique`, and the report says so); per format per channel: posts,
    median engagement rate; top 3 and bottom 3 posts by engagement rate (with at least the median reach, so tiny
    posts do not win), each with a reason grounded in the post (format, topic, hook, time) stated as a likely reason,
    not a proven cause.

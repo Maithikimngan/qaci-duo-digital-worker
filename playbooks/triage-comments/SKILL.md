@@ -2,7 +2,7 @@
 name: triage-comments
 title: Triage comments and draft replies
 description: Read new comments on every channel, group them as question, complaint, praise or spam, draft short replies for the owner's approval, flag complaints for a human, and send approved replies within rate limits.
-triggers: comments, comment triage, reply to comments, draft replies, what are people saying, answer comments, triage comments, new comments
+triggers: comment triage, triage comments, reply to comments, answer comments, new comments, in the comments, draft replies, what are people saying
 tags: marketing, social-media, community, replies
 license: Unspecified
 author: QACI Duo
@@ -36,8 +36,8 @@ at all: say so in one sentence (Settings of this bot → Apps) and work only fro
 |---|---|
 | Facebook comments | `FACEBOOK_GET_PAGE_POSTS`, then `FACEBOOK_GET_COMMENTS` per post |
 | Facebook reply | `FACEBOOK_CREATE_COMMENT` on the comment's id |
-| Instagram comments | `INSTAGRAM_GET_USER_MEDIA`, then `INSTAGRAM_GET_POST_COMMENTS` per post |
-| Instagram reply | `INSTAGRAM_REPLY_TO_COMMENT` |
+| Instagram comments | `INSTAGRAM_GET_IG_USER_MEDIA` (`ig_user_id: "me"`), then `INSTAGRAM_GET_IG_MEDIA_COMMENTS` (`ig_media_id`) per post |
+| Instagram reply | `INSTAGRAM_POST_IG_COMMENT_REPLIES` (`ig_comment_id`, `message`: at most 300 characters, 4 hashtags, 1 link) |
 | Threads replies (optional) | `THREADS_LIST_POST_REPLIES`; reply with `THREADS_CREATE_REPLY` |
 | Browser channels | read and reply with `browser-posting` |
 

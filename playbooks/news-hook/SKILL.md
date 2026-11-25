@@ -2,7 +2,7 @@
 name: news-hook
 title: Pick today's news hook
 description: Scan the last 24–48 hours of news (72 on Mondays) on the brand's fixed search phrases and pick one item that passes four tests, or say plainly that no news qualifies and a knowledge post is due.
-triggers: news hook, scan the news, todays news, news for a post, what is in the news, pick a news item
+triggers: news hook, scan the news, today s news, news for a post, what is in the news, pick a news item
 tags: marketing, social-media, news, research
 license: Unspecified
 author: QACI Duo
