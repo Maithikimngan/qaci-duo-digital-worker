@@ -33,6 +33,7 @@ Ask once, all questions together. When an answer is missing, use the default and
 | The 1–5 jobs it does, each as "given …, it hands back …" | yes (new) | — |
 | What each job needs from the owner (files, links, answers) | no | asked from the owner at run time |
 | Apps or MCP servers it must use | no | none |
+| Anything it should do on a schedule (what, when, which job) | no | no routines |
 | What it must never do, and what needs the owner's approval | no | the library's standard guardrails |
 | 2–3 realistic requests a user would send | no | written from the jobs, marked as examples |
 | For a change: what is wrong today, with an example conversation | yes (edit) | — |
@@ -79,6 +80,7 @@ If a tool is missing or fails, say so and stop at that step; never work around i
    - each job as one skill: `name`, what it hands back, and whether it is new or reused;
    - which skill is the main procedure (carried under both `playbooks:` and `skills:`) and its triggers;
    - the apps (`slug` each) and why;
+   - any routines: what runs, when, and which skill it triggers;
    - for a change: every file that changes, and the new `release`.
    Wait for the owner's OK. A skill shared by other workers changes them too: name them and bump their `release`.
 4. **Write the files**, starting from the templates, following `FORMAT.md` and `AGENTS.md` exactly:
@@ -90,6 +92,12 @@ If a tool is missing or fails, say so and stop at that step; never work around i
      *Procedure* (numbered, with *Check:* lines), *Output*, *Quality checklist*, *Guardrails*, *Example*.
    - Refer to another skill as "open the `<name>` skill (read its SKILL.md; the exact path is in your Imported
      skills list)". Name every app tool exactly, and say what to do when it is missing.
+   - Routines, when the owner wants scheduled runs, go in the worker's `routines:` (see FORMAT.md): `runOn: duo`
+     (where the bot already runs; on a research Team Cloud that is the team server) unless the owner confirms cloud
+     computers are configured, `enabledAfterInstall: false` always, a `prompt` that contains one of the main
+     playbook's triggers so the procedure is injected, and a `schedule` of `daily` (`time` "HH:MM", `weekdays` 0–6,
+     0 = Sunday) or `once`. A routine that would publish, send, delete or spend must still stop for the owner's
+     approval on every run: say so in its prompt.
    - For a change: edit only what the plan named, and bump `release` (patch for wording, minor for behaviour,
      major for a different procedure or output).
    *Check:* no secrets, tokens, personal data, internal hostnames you were not given, or helper files next to a

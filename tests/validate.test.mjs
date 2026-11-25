@@ -280,6 +280,10 @@ test("a worker may declare extra agents, a shared room and a paused routine", ()
   assert.equal(pkg.rooms[0].defaultResponder.agent, "sample-worker");
   assert.equal(pkg.routines[0].runOn, "duo");
   assert.equal(pkg.routines[0].enabledAfterInstall, false);
+  // The app's package schema accepts runOn "maus" | "cloud" only; "duo" would make the whole package fail to install.
+  const real = workerRealPackage(multi, playbooks);
+  assert.equal(real.package.routines[0].runOn, "maus");
+  assert.equal(real.package.routines[0].enabledAfterInstall, false);
   const { entry: multiEntry, files } = workerLibraryFiles(multi, playbooks);
   assert.equal(multiEntry.members, 2);
   const manifest = JSON.parse(new Map(files.map((file) => [file.path, file.content])).get(multiEntry.manifest));

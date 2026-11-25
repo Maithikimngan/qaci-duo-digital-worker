@@ -66,7 +66,7 @@ playbooks:
 #     name: Your Routine
 #     agent: your-worker
 #     prompt: What to do each time this routine runs.
-#     runOn: duo # duo or cloud
+#     runOn: duo # duo = where the bot already runs (the team server in research mode); cloud only if cloud computers are configured
 #     durationMinutes: 15
 #     enabledAfterInstall: false # always false; the user turns it on
 #     schedule: { type: daily, time: "09:00", weekdays: [1, 2, 3, 4, 5] } # or { type: once, at: <epoch ms> }

@@ -15,6 +15,8 @@ export const PACKAGE_VERSION = 2; // QACI Duo package v2: team{name,leader,brief
 export const TEAM_FORMAT = "qaci-duo.team";
 export const CATALOG_FORMAT = "qaci-duo.catalog";
 export const ROUTINE_RUNTIMES = new Set(["duo", "cloud"]);
+/** `runOn` as the QACI Duo app reads it: `duo` (where the bot already runs) is the app's `maus`. */
+export const APP_ROUTINE_RUNTIME = { duo: "maus", cloud: "cloud" };
 export const SOUL_MAX_BYTES = 24_000; // a standing system prompt's limit, same cap QACI Duo itself uses
 export const TEAM_BRIEF_MAX_BYTES = 24_000;
 export const MAX_CONNECTIONS = 20;
@@ -661,7 +663,10 @@ function packageFields(worker, playbooksByName) {
 export function workerRealPackage(markdown, playbooksByName) {
   const { metadata: worker } = splitPackage(markdown);
   const { pkg } = packageFields(worker, playbooksByName);
-  return { format: REAL_PACKAGE_FORMAT, version: REAL_PACKAGE_VERSION, package: pkg };
+  // The app names "run where the bot already runs" `maus` (shared/package-format.ts: runOn "maus" | "cloud") and
+  // refuses `duo`, so a routine written with this repository's `duo` would make the whole package fail to install.
+  const routines = pkg.routines?.map((routine) => ({ ...routine, runOn: APP_ROUTINE_RUNTIME[routine.runOn] ?? routine.runOn }));
+  return { format: REAL_PACKAGE_FORMAT, version: REAL_PACKAGE_VERSION, package: { ...pkg, ...(routines ? { routines } : {}) } };
 }
 
 /** The QACI Duo package v2 file this repository's own catalog/team-library mechanism uses: a worker is one or
