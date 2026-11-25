@@ -89,10 +89,23 @@ A worker reaches outside tools in one of two ways. Pick one per tool.
 
 ### The `slug` of an app
 
-- **It is the Composio toolkit slug, exactly**, in lowercase: `exa`, `github`, `gmail`, `deepwiki_mcp`,
-  `cve_now_mcp`. Use `twitter`, not `x`. Toolkits that wrap an MCP server usually end in `_mcp`.
-- **Do not guess it.** Find it once with `COMPOSIO_SEARCH_TOOLS`: every tool it returns names its toolkit, and that
-  name in lowercase is the slug. Composio's toolkit page shows the same slug.
+- **It is the Composio toolkit slug, exactly**, in lowercase. Checked against Composio's API:
+
+  | App | Slug | Wrong guesses Composio does not know |
+  |---|---|---|
+  | Exa | `exa` | |
+  | DeepWiki | `deepwiki_mcp` | `deepwiki` |
+  | cve.now | `cve_now_mcp` | |
+  | Semantic Scholar | `semanticscholar` | `semantic_scholar` |
+  | GitHub, Gmail, Render | `github`, `gmail`, `render` | |
+  | X / Twitter | `twitter` | `x` |
+
+  Toolkits that wrap a hosted MCP server end in `_mcp`; others do not, and a multi-word name may have no separator.
+- **Do not guess it; check it.** Either:
+  - ask Composio: `GET https://backend.composio.dev/api/v3/toolkits/<slug>` with your own key in the `x-api-key`
+    header returns the toolkit (`slug`, `name`) or 404 when the slug is wrong; or
+  - run `COMPOSIO_SEARCH_TOOLS` in a bot with the app connected: every tool it returns names its toolkit, and that
+    name in lowercase is the slug.
 - **Validator rule:** `^[a-z0-9][a-z0-9_-]*$`, at most 64 characters. `label` (≤100) is the name the owner sees,
   for example `DeepWiki`. `reason` (≤240) is one sentence on what the worker does with it. Set `optional: true`
   unless the worker can do nothing at all without the app.
@@ -103,8 +116,10 @@ A worker reaches outside tools in one of two ways. Pick one per tool.
 ### Tool names inside a SKILL.md
 
 - Composio tool names are the toolkit slug in upper case plus the action: `EXA_SEARCH`, `EXA_GET_CONTENTS_ACTION`,
-  `DEEPWIKI_MCP_ASK_WIKI_QUESTION`, `CVE_NOW_MCP_GET_VULNERABILITY`. Copy them exactly from what
-  `COMPOSIO_SEARCH_TOOLS` returns, with the parameters that matter (`category: "research paper"`, …).
+  `DEEPWIKI_MCP_ASK_WIKI_QUESTION`, `CVE_NOW_MCP_GET_VULNERABILITY`, `SEMANTICSCHOLAR_DETAILS_ABOUT_A_PAPER`. Copy them
+  exactly from what `COMPOSIO_SEARCH_TOOLS` returns, with the parameters that matter (`category: "research paper"`, …).
+  For a regular toolkit, `GET https://backend.composio.dev/api/v3/tools?toolkit_slug=<slug>` also lists them; an
+  `_mcp` toolkit's tools come from its MCP server and show up only through `COMPOSIO_SEARCH_TOOLS`.
 - Tell the bot to load tools once: tool search for `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL`, call
   `COMPOSIO_SEARCH_TOOLS` for the toolkits it needs, then run tools through `COMPOSIO_MULTI_EXECUTE_TOOL` in
   batches. Put the tools in a *Need → Tool* table, as `playbooks/survey-literature/SKILL.md` does.
