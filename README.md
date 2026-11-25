@@ -51,5 +51,4 @@ reads only `library`, so a change reaches users only after review and merge.
 ## Browse
 
 `npm run site:dev` runs a small Next.js site that lists the Digital Workers and playbooks in this repository and
-lets you read or copy any of them. CI does not run it: CI runs only `npm test` and `npm run build`. See
-[PORTING_NOTES.md](PORTING_NOTES.md) for where the site and the package format came from.
+lets you read or copy any of them. CI does not run it: CI runs only `npm test` and `npm run build`.

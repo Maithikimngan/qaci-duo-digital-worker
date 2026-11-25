@@ -98,7 +98,7 @@ export interface WorkerPackage {
   examples?: Array<{ title: string; input: string; output: string }>;
   /**
    * Optional provenance field. No QACI Duo Digital Worker carries a revenue claim, so this is always absent
-   * here — see PORTING_NOTES.md. Kept so a future, genuine provenance field has somewhere to land without
+   * here. Kept so a future, genuine provenance field has somewhere to land without
    * another rename.
    */
   proof?: {

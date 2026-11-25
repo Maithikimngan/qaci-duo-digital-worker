@@ -1,8 +1,7 @@
 // Shared rules for QACI Duo Digital Workers and playbooks: parse, validate, scan for secrets and build the library.
 // A playbook is one SKILL.md (one capability); a Digital Worker (workers/<id>.md) is one bot that carries playbooks
 // and, optionally, full embedded skills, MCP connection slots, and per-agent souls (standing system prompts).
-// The checks follow QACI Duo's own parsers (shared/skill-md.ts, shared/package-format.ts). Provenance of the
-// package format: PORTING_NOTES.md.
+// The checks follow QACI Duo's own parsers (shared/skill-md.ts, shared/package-format.ts).
 // The package shape (team{name,leader,brief}, connections[], skills.entries[], agent.soul) matches QACI Duo's own
 // package v2 schema (shared/package-format.ts's packageDocumentSchema), not just the lighter v1 shape.
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
@@ -578,7 +577,7 @@ const yamlBlock = (value) => stringifyYaml(value, { lineWidth: 0 }).trimEnd();
 // this repository's own PACKAGE_FORMAT ("qaci-duo.package") uses for its .md files. The two are independent: a
 // worker's generated packages/<id>.md (PACKAGE_FORMAT, for this repository's own catalog/team-library mechanism)
 // and packages/<id>.json (REAL_PACKAGE_FORMAT, for the real app's Templates-style JSON import) both come from
-// the same `packageFields()` below, just wrapped differently — see PORTING_NOTES.md.
+// the same `packageFields()` below, just wrapped differently.
 export const REAL_PACKAGE_FORMAT = "openmaus.package";
 export const REAL_PACKAGE_VERSION = 2;
 
@@ -657,7 +656,7 @@ function packageFields(worker, playbooksByName) {
 /** The real QACI Duo app's own package v2 document — `{format: "openmaus.package", version: 2, package: {...}}`,
  * nested, matching shared/package-format.ts's packageDocumentSchema exactly. This is what the real app's
  * Templates-style JSON import (and docs/playbooks/*.json in qaci-duo) actually reads; confirmed by importing
- * one of these into a real, unmodified QACI Duo server (see PORTING_NOTES.md) — unlike packages/<id>.md below,
+ * one of these into a real, unmodified QACI Duo server — unlike packages/<id>.md below,
  * which this repository's own PACKAGE_FORMAT rename made unreadable by the real app's Markdown import path. */
 export function workerRealPackage(markdown, playbooksByName) {
   const { metadata: worker } = splitPackage(markdown);
@@ -835,12 +834,12 @@ const ALLOWED_FILES = [
   /^templates\/(?:worker\.md|playbook\/SKILL\.md)$/,
   /^scripts\/[a-z0-9-]+\.mjs$/,
   /^tests\/[a-z0-9.-]+\.mjs$/,
-  // Declarative JSON Schema documenting the hand-written validators above; see PORTING_NOTES.md.
+  // Declarative JSON Schema documenting the hand-written validators above.
   /^schema\/[a-z0-9.-]+\.schema\.json$/,
   /^\.github\/(?:CODEOWNERS|PULL_REQUEST_TEMPLATE\.md|workflows\/[a-z0-9-]+\.yml|ISSUE_TEMPLATE\/[a-z0-9-]+\.yml)$/,
-  /^(?:README|CONTRIBUTING|FORMAT|SECURITY|PORTING_NOTES|AGENTS|CLAUDE)\.md$/,
+  /^(?:README|CONTRIBUTING|FORMAT|SECURITY|AGENTS|CLAUDE)\.md$/,
   /^(?:LICENSE|package\.json|package-lock\.json|\.gitignore|next\.config\.ts|tsconfig\.json|next-env\.d\.ts)$/,
-  // The public browsing website (Next.js App Router); see PORTING_NOTES.md.
+  // The public browsing website (Next.js App Router).
   /^app\/(?:[a-z0-9_.[\]-]+\/)*[a-z0-9_.[\]-]+\.(?:tsx|ts|css|svg)$/,
   /^components\/[A-Za-z0-9.-]+\.tsx$/,
   /^lib\/[a-z0-9.-]+\.ts$/,

@@ -12,7 +12,7 @@
 // What this script cannot get from the source JSON (because the real package has no such field, or doesn't have
 // it populated yet): the *worker's own* top-level framing (a short name/title/description for the installed
 // identity QACI Duo's package format forces every worker to have as one of its own agents), which real agent is
-// actually the team's lead, and suggested example questions. See PORTING_NOTES.md section 5 for why that
+// actually the team's lead, and suggested example questions. That
 // top-level identity is a nameless, roomless, soul-less wrapper rather than reusing the lead's own key — reusing
 // it would break that agent's own soul text, which self-references its real key via `{{agent:<key>}}`.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -95,7 +95,7 @@ if (!pkg.agents.some((agent) => agent.key === config.leaderKey)) {
 
 // --- Playbook files: one playbooks/<name>/SKILL.md per skill the source embeds, synthesizing the fields this
 // repository's own SKILL.md convention requires (title, triggers, license, author) but the real skill format
-// (shared/skill-md.ts) does not — it only has name/description/tags. See PORTING_NOTES.md section 4/5.
+// (shared/skill-md.ts) does not — it only has name/description/tags.
 const needsQuote = (value) => value.includes(": ") || /^[-?:&*!|>%@`"']/.test(value) || value.endsWith(":");
 const yq = (value) => (needsQuote(value) ? JSON.stringify(value) : value);
 const titleFromBody = (body) => body.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "";

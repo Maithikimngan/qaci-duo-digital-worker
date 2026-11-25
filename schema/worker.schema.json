@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/vanhaito/qaci-duo-playbooks/main/schema/worker.schema.json",
   "title": "QACI Duo Digital Worker",
-  "description": "The YAML frontmatter of workers/<id>.md, as checked by validateWorker() in scripts/lib.mjs. This schema documents that hand-written validator; scripts/lib.mjs remains the source of truth and the authoritative CI gate — this is tooling/editor documentation only. `agents`, `chiefOfStaff`, `rooms`, `routines`, `soul`, `connections`, `skills` and `teamBrief` are an optional extension: a worker with none of them is exactly the single-agent, playbooks-only shape every worker file used before this extension. See FORMAT.md and PORTING_NOTES.md.",
+  "description": "The YAML frontmatter of workers/<id>.md, as checked by validateWorker() in scripts/lib.mjs. This schema documents that hand-written validator; scripts/lib.mjs remains the source of truth and the authoritative CI gate — this is tooling/editor documentation only. `agents`, `chiefOfStaff`, `rooms`, `routines`, `soul`, `connections`, `skills` and `teamBrief` are an optional extension: a worker with none of them is exactly the single-agent, playbooks-only shape every worker file used before this extension. See FORMAT.md.",
   "type": "object",
   "required": [
     "id", "release", "name", "title", "tagline", "description", "category", "author", "license", "color", "outcomes"
