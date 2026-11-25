@@ -76,6 +76,46 @@ Knowing this decides how to write a skill. The relevant app code is `server/inst
 - **`release` drives updates.** It is published in `catalog.json`; installed copies are offered an update when it
   is higher. Bump it for every change to the worker or to any playbook or skill it carries.
 
+## Declaring apps and MCP connections
+
+A worker reaches outside tools in one of two ways. Pick one per tool.
+
+| | `apps:` (a Composio app) | `connections:` (your own MCP server) |
+|---|---|---|
+| Use for | A service Composio already hosts: Exa, GitHub, Gmail, DeepWiki, cve.now, … | An MCP server you run, such as an internal knowledge base |
+| Fields | `slug`, `label`, `reason`, `optional` | `key`, `label`, `reason`, `mcp: {transport, url, valueNames}` |
+| Who gets it | The whole worker | Only the agents that list its `key` in `agents[].connections` |
+| Example | `workers/literature-surveyor.md` | `workers/adlc.md` (`qaci-data`) |
+
+### The `slug` of an app
+
+- **It is the Composio toolkit slug, exactly**, in lowercase: `exa`, `github`, `gmail`, `deepwiki_mcp`,
+  `cve_now_mcp`. Use `twitter`, not `x`. Toolkits that wrap an MCP server usually end in `_mcp`.
+- **Do not guess it.** Find it once with `COMPOSIO_SEARCH_TOOLS`: every tool it returns names its toolkit, and that
+  name in lowercase is the slug. Composio's toolkit page shows the same slug.
+- **Validator rule:** `^[a-z0-9][a-z0-9_-]*$`, at most 64 characters. `label` (≤100) is the name the owner sees,
+  for example `DeepWiki`. `reason` (≤240) is one sentence on what the worker does with it. Set `optional: true`
+  unless the worker can do nothing at all without the app.
+- **What the app does with it:** QACI Duo shows `label` and `reason` at install and keeps the list with the installed
+  bot. It does **not** connect or switch on anything. The owner connects the app and turns on app access in the
+  bot's **Settings → Apps**, so every skill that uses an app must say what to do when its tools are missing.
+
+### Tool names inside a SKILL.md
+
+- Composio tool names are the toolkit slug in upper case plus the action: `EXA_SEARCH`, `EXA_GET_CONTENTS_ACTION`,
+  `DEEPWIKI_MCP_ASK_WIKI_QUESTION`, `CVE_NOW_MCP_GET_VULNERABILITY`. Copy them exactly from what
+  `COMPOSIO_SEARCH_TOOLS` returns, with the parameters that matter (`category: "research paper"`, …).
+- Tell the bot to load tools once: tool search for `COMPOSIO_SEARCH_TOOLS` and `COMPOSIO_MULTI_EXECUTE_TOOL`, call
+  `COMPOSIO_SEARCH_TOOLS` for the toolkits it needs, then run tools through `COMPOSIO_MULTI_EXECUTE_TOOL` in
+  batches. Put the tools in a *Need → Tool* table, as `playbooks/survey-literature/SKILL.md` does.
+
+### A `connections:` slot
+
+- `key` follows the same rule as an app slug. `mcp.url` must be `https://` with no credentials in it.
+  `mcp.transport` is `http` or `sse`. `valueNames` lists only the **names** of headers the installer fills in (for
+  example `Authorization`), never their values.
+- A connection is given to no agent by default: add its `key` to `agents[].connections` of each agent that needs it.
+
 ## Writing a good skill
 
 - One procedure with one result. Inputs asked once, all together, with a default when nobody answers.

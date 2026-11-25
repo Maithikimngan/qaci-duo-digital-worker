@@ -8,7 +8,7 @@ Thank you for helping QACI Duo's Digital Workers get better at real work.
 |---|---|
 | Add a capability | Create `playbooks/<your-playbook>/SKILL.md` from [`templates/playbook/SKILL.md`](templates/playbook/SKILL.md). To have a worker carry it, add its name under `playbooks:` and/or `skills:` in `workers/<worker>.md` — and under the same list of each agent in `agents[]` that should use it — then bump that worker's `release`. |
 | Improve a playbook | Edit `playbooks/<name>/SKILL.md` and bump the `release` of every worker that carries it (as a playbook or a skill). |
-| Give a worker an app | Add an entry under `apps:` (`slug`, `label`, `reason`, `optional`), and name the app's tools in the `SKILL.md` that uses them. Never add credentials. |
+| Give a worker an app | Add an entry under `apps:` (`slug`, `label`, `reason`, `optional`), and name the app's tools in the `SKILL.md` that uses them. The `slug` is the Composio toolkit slug; see [AGENTS.md](AGENTS.md#declaring-apps-and-mcp-connections) for how to find it and how to name tools. Never add credentials. |
 | Propose a new worker | Create `workers/<your-worker>.md` from [`templates/worker.md`](templates/worker.md) and list the playbooks and skills it carries. |
 
 A playbook is **one procedure that produces a result** — "verify a reference list", "design the experiments". A
