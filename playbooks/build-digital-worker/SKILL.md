@@ -96,7 +96,9 @@ If a tool is missing or fails, say so and stop at that step; never work around i
      (where the bot already runs; on a research Team Cloud that is the team server) unless the owner confirms cloud
      computers are configured, `enabledAfterInstall: false` always, a `prompt` that contains one of the main
      playbook's triggers so the procedure is injected, and a `schedule` of `daily` (`time` "HH:MM", `weekdays` 0–6,
-     0 = Sunday) or `once`. A routine that would publish, send, delete or spend must still stop for the owner's
+     0 = Sunday), `cron` (five fields `minute hour day-of-month month weekday`, no seconds or `@` macros, plus a
+     named `timeZone` such as `Asia/Ho_Chi_Minh` — ask the owner's time zone; for example
+     `{type: cron, expression: "0 8 * * 1-5", timeZone: Asia/Ho_Chi_Minh}` is 08:00 on weekdays) or `once`. A routine that would publish, send, delete or spend must still stop for the owner's
      approval on every run: say so in its prompt.
    - For a change: edit only what the plan named, and bump `release` (patch for wording, minor for behaviour,
      major for a different procedure or output).

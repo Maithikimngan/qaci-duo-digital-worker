@@ -301,6 +301,19 @@ test("a routine that does not install paused, or an unknown runOn, is refused", 
 // ---------------------------------------------------------------------------------------------------------------
 // v2 extension: soul, connections, embedded skills.
 
+test("a cron routine with a named time zone is accepted and reaches the app package unchanged", () => {
+  const withCron = (schedule) => worker.replace("license: MIT\n", `license: MIT\nroutines:\n  - key: weekly\n    name: Weekly\n    agent: sample-worker\n    prompt: Summarise.\n    runOn: duo\n    durationMinutes: 15\n    enabledAfterInstall: false\n    schedule: ${schedule}\n`);
+  const good = withCron('{type: cron, expression: "0 8 * * 1", timeZone: Asia/Ho_Chi_Minh}');
+  assert.deepEqual(validateWorker(good, "sample-worker", names), []);
+  const real = workerRealPackage(good, playbooks);
+  assert.deepEqual(real.package.routines[0].schedule, { type: "cron", expression: "0 8 * * 1", timeZone: "Asia/Ho_Chi_Minh" });
+  assert.equal(real.package.routines[0].runOn, "maus");
+  has(validateWorker(withCron('{type: cron, expression: "0 8 * * 1", timeZone: "+07:00"}'), "sample-worker", names), "IANA time zone");
+  has(validateWorker(withCron('{type: cron, expression: "0 0 8 * * 1", timeZone: UTC}'), "sample-worker", names), "five cron fields");
+  has(validateWorker(withCron('{type: cron, expression: "@weekly", timeZone: UTC}'), "sample-worker", names), "five cron fields");
+  has(validateWorker(withCron('{type: cron, expression: "0 8 * * 1", timeZone: UTC, endsAt: 1}'), "sample-worker", names), "only type, expression and timeZone");
+});
+
 test("an agent's soul, a declared connection and an embedded skill all round-trip into the generated package", () => {
   const withExtras = worker
     .replace("license: MIT\n", "license: MIT\n")

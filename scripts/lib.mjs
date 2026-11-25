@@ -57,6 +57,36 @@ function credentialFields(value, path, out) {
 
 /** Every reason an MCP connection slot would be unsafe or invalid; a slot never carries a secret value, only the
  * address and the names of the header values the installer will supply. */
+/** A routine schedule, as QACI Duo's package schema (shared/package-format.ts) and its cron calculator
+ * (shared/routine-schedule.ts) accept it: daily, once, or a five-field cron with a named IANA time zone. The app checks
+ * a cron expression fully on import; this catches the mistakes that would make it refuse the whole package. */
+function validateSchedule(schedule, at, fail) {
+  if (schedule?.type === "daily") {
+    const days = schedule.weekdays;
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time ?? "")) fail(`${at}.schedule.time must be HH:MM, for example "09:00"`);
+    if (!Array.isArray(days) || days.length === 0 || days.length > 7 || days.some((day) => !Number.isInteger(day) || day < 0 || day > 6) || new Set(days).size !== days.length) {
+      fail(`${at}.schedule.weekdays must be distinct numbers 0-6 (0 = Sunday)`);
+    }
+  } else if (schedule?.type === "cron") {
+    if (Object.keys(schedule).some((key) => !["type", "expression", "timeZone"].includes(key))) {
+      fail(`${at}.schedule: a cron schedule takes only type, expression and timeZone`);
+    }
+    const expression = typeof schedule.expression === "string" ? schedule.expression.trim().replace(/\s+/g, " ") : "";
+    const fields = expression.split(" ");
+    if (!expression || expression.length > 256 || fields.length !== 5 || expression.includes("@") || fields.some((field) => !/^[0-9A-Za-z*,/?#LW-]+$/.test(field))) {
+      fail(`${at}.schedule.expression must be five cron fields: minute hour day-of-month month weekday, for example "0 8 * * 1"`);
+    }
+    const timeZone = typeof schedule.timeZone === "string" ? schedule.timeZone.trim() : "";
+    let knownZone = timeZone === "UTC" || /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+)+$/.test(timeZone);
+    if (knownZone) {
+      try { new Intl.DateTimeFormat("en-US", { timeZone }).format(0); } catch { knownZone = false; }
+    }
+    if (!knownZone) fail(`${at}.schedule.timeZone must be a named IANA time zone such as "Asia/Ho_Chi_Minh" or "UTC"`);
+  } else if (schedule?.type !== "once" || !Number.isInteger(schedule.at)) {
+    fail(`${at}.schedule must be daily (time + weekdays), cron (expression + timeZone) or once (at)`);
+  }
+}
+
 function validateConnection(connection, at, fail) {
   if (!text(connection?.key, 64) || !KEY.test(connection.key)) fail(`${at}.key is invalid`);
   if (!text(connection?.label, 100)) fail(`${at}.label is required`);
@@ -244,16 +274,7 @@ export function validatePackage(markdown, slug) {
     if (!Number.isInteger(routine?.durationMinutes) || routine.durationMinutes < 5 || routine.durationMinutes > 240) {
       fail(`${at}.durationMinutes must be from 5 to 240`);
     }
-    const schedule = routine?.schedule;
-    if (schedule?.type === "daily") {
-      const days = schedule.weekdays;
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time ?? "")) fail(`${at}.schedule.time must be HH:MM, for example "09:00"`);
-      if (!Array.isArray(days) || days.length === 0 || days.length > 7 || days.some((day) => !Number.isInteger(day) || day < 0 || day > 6) || new Set(days).size !== days.length) {
-        fail(`${at}.schedule.weekdays must be distinct numbers 0-6 (0 = Sunday)`);
-      }
-    } else if (schedule?.type !== "once" || !Number.isInteger(schedule.at)) {
-      fail(`${at}.schedule must be daily (time + weekdays) or once (at)`);
-    }
+    validateSchedule(routine?.schedule, at, fail);
   }
   return errors;
 }
@@ -556,16 +577,7 @@ export function validateWorker(markdown, slug, playbookNames) {
       if (!Number.isInteger(routine?.durationMinutes) || routine.durationMinutes < 5 || routine.durationMinutes > 240) {
         fail(`${at}.durationMinutes must be from 5 to 240`);
       }
-      const schedule = routine?.schedule;
-      if (schedule?.type === "daily") {
-        const days = schedule.weekdays;
-        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time ?? "")) fail(`${at}.schedule.time must be HH:MM, for example "09:00"`);
-        if (!Array.isArray(days) || days.length === 0 || days.length > 7 || days.some((day) => !Number.isInteger(day) || day < 0 || day > 6) || new Set(days).size !== days.length) {
-          fail(`${at}.schedule.weekdays must be distinct numbers 0-6 (0 = Sunday)`);
-        }
-      } else if (schedule?.type !== "once" || !Number.isInteger(schedule.at)) {
-        fail(`${at}.schedule must be daily (time + weekdays) or once (at)`);
-      }
+      validateSchedule(routine?.schedule, at, fail);
     }
   }
 
