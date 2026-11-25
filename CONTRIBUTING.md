@@ -72,6 +72,8 @@ How the app uses each matters when you write one:
 - **Evidence.** The worker is told to cite sources and to separate verified facts from inference; it never invents
   papers, numbers or people.
 - **Named tools.** When a step needs an app, the playbook names the exact tool and what to do when it is missing.
+- **Verified apps.** A new app, connection or tool name comes with proof in *Tried on*: the slug exists on Composio,
+  every named tool exists, and one real call worked ([AGENTS.md](AGENTS.md#required-verify-before-you-add-an-app-or-a-connection)).
 - **Guardrails.** *Never* and *Ask first* lists cover sending, submitting, deleting and running costly jobs.
 - **No private data.** No names of colleagues, internal projects, customer or patient data, links with credentials.
 - **Tested.** The pull request says what real request the worker was given and what came back.

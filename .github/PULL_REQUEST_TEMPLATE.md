@@ -10,6 +10,7 @@
 - [ ] The playbook has every section in FORMAT.md, with *Check:* lines and an *Output* template
 - [ ] `npm test` passes (or the CI check on this pull request is green)
 - [ ] Tried in QACI Duo (Skills library or Templates → Import)
+- [ ] New or changed app / connection / tool name: slug checked on Composio, every tool name found by `COMPOSIO_SEARCH_TOOLS`, one real call worked (details under *Tried on*)
 
 ## Safety
 

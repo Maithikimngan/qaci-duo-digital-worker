@@ -87,6 +87,23 @@ A worker reaches outside tools in one of two ways. Pick one per tool.
 | Who gets it | The whole worker | Only the agents that list its `key` in `agents[].connections` |
 | Example | `workers/literature-surveyor.md` | `workers/adlc.md` (`qaci-data`) |
 
+### Required: verify before you add an app or a connection
+
+Do **not** add an entry to `apps:` or `connections:`, or name a tool in a `SKILL.md`, until all of these pass.
+A wrong slug or tool name does not fail `npm test`; it fails later, in a user's chat, as a tool the bot cannot find.
+
+1. **The slug exists.** `GET https://backend.composio.dev/api/v3/toolkits/<slug>` returns the toolkit (not 404),
+   and its `name` is the service you mean. For a `connections:` slot, the `https://` URL answers as an MCP server.
+2. **Every tool name exists.** In a bot with the app connected, `COMPOSIO_SEARCH_TOOLS` returns each tool the
+   `SKILL.md` names (for example `EXA_SEARCH`), spelled exactly, and the parameters the skill uses are in its schema.
+3. **One real call works.** The bot calls each named tool once through `COMPOSIO_MULTI_EXECUTE_TOOL` (or the
+   connection's tool) and gets a real result, not an error.
+4. **The missing-app path works.** With app access off, the bot follows the skill's instruction (tells the owner
+   how to turn it on, then stops) instead of answering from memory.
+
+Write the result in the pull request's *Tried on* section: slug, tools checked, and one real call that worked. A
+reviewer must not merge a new app or tool name without it.
+
 ### The `slug` of an app
 
 - **It is the Composio toolkit slug, exactly**, in lowercase. Checked against Composio's API:

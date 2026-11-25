@@ -49,7 +49,7 @@ YAML frontmatter followed by a Markdown body.
 | `outcomes` | yes | 1–12 results the user gets |
 | `playbooks` | one of `playbooks`/`skills` | 1–30 folder names from `playbooks/`, carried as lightweight trigger+instructions |
 | `skills` | one of `playbooks`/`skills` | 1–30 folder names from `playbooks/`, each embedded whole as a real, importable skill — see below |
-| `apps` | no | Composio apps the worker can use: `slug` (the exact Composio toolkit slug, lowercase, such as `exa` or `deepwiki_mcp` — see [AGENTS.md](AGENTS.md#declaring-apps-and-mcp-connections) for how to check it), `label`, `reason`, `optional`. Declared only, never with credentials |
+| `apps` | no | Composio apps the worker can use: `slug` (the exact Composio toolkit slug, lowercase, such as `exa` or `deepwiki_mcp` — see [AGENTS.md](AGENTS.md#declaring-apps-and-mcp-connections) for how to check it), `label`, `reason`, `optional`. Declared only, never with credentials. **Add an app only after its slug, every tool name the playbook uses, and one real call have been verified** ([AGENTS.md](AGENTS.md#required-verify-before-you-add-an-app-or-a-connection)) |
 | `tags`, `featured`, `setupMinutes` | no | `featured: true` lists the worker first |
 | `soul` | no | This worker's own standing system prompt, under 24,000 bytes. Optional; without it the worker runs on `description` alone, as before |
 | `connections` | no | Up to 20 declared MCP slots, available to be handed to a specific agent (see below): `key`, `label`, `reason`, `mcp: {transport: http\|sse, url, valueNames}`. A slot never carries a secret value — only the address and the names of the header values an installer supplies |
