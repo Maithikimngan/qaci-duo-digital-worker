@@ -18,6 +18,14 @@ outcomes:
   - The first result the user gets
   - The second result the user gets
 setupMinutes: 5
+# Optional: Composio apps the worker uses. `slug` must be the exact Composio toolkit slug (lowercase), e.g. exa,
+# github, gmail, deepwiki_mcp, cve_now_mcp, semanticscholar. Check it before you commit; see AGENTS.md, "Declaring
+# apps and MCP connections". Never put a key or token here: the owner connects the app in the bot's Settings → Apps.
+# apps:
+#   - slug: exa
+#     label: Exa
+#     reason: Searches papers and web pages by meaning.
+#     optional: true
 playbooks:
   - your-playbook # folder names under playbooks/
 # Optional: a worker can carry more than one agent, a shared room, paused routines, a standing soul, declared MCP
