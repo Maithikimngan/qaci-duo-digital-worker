@@ -226,7 +226,7 @@ test("token-shaped strings are found", () => {
 });
 
 test("only the known layout is allowed", () => {
-  assert.deepEqual(disallowedFiles(["workers/a-b.md", "playbooks/a-b/SKILL.md", "README.md", "scripts/lib.mjs", ".github/workflows/validate.yml"]), []);
+  assert.deepEqual(disallowedFiles(["workers/a-b.md", "playbooks/a-b/SKILL.md", "README.md", "AGENTS.md", "CLAUDE.md", "scripts/lib.mjs", ".github/workflows/validate.yml"]), []);
   const bad = ["playbooks/a/run.sh", "playbooks/a/b/SKILL.md", "playbooks/Upper/SKILL.md", "workers/x/y.md", "image.png", "packages/a.md"];
   assert.deepEqual(disallowedFiles(bad), bad);
 });

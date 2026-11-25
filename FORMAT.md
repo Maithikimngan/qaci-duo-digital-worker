@@ -11,7 +11,7 @@ and put a value that contains `": "` in double quotes.
 | `name` | yes | Equal to the folder name; lowercase letters, digits and single hyphens, at most 64 characters |
 | `title` | yes | Display name in QACI Duo, at most 100 characters |
 | `description` | yes | One sentence: what the worker achieves and hands back. At most 300 characters |
-| `triggers` | yes | 1–30 comma-separated phrases a user would say when they need this playbook |
+| `triggers` | yes | 1–30 comma-separated phrases a user would say when they need this playbook. QACI Duo injects a `playbooks:` entry only when the message contains a trigger as a whole phrase (case and punctuation ignored), at most 3 per message |
 | `tags` | no | Up to 8 lowercase comma-separated words |
 | `license` | yes | For example `MIT` |
 | `author` | yes | Person or team that wrote it |
@@ -40,7 +40,7 @@ YAML frontmatter followed by a Markdown body.
 | Field | Required | Meaning |
 |---|---|---|
 | `id` | yes | Equal to the file name |
-| `release` | yes | Semantic version such as `1.0.0`; bump it whenever the worker or one of its playbooks changes |
+| `release` | yes | Semantic version such as `1.0.0`; bump it whenever the worker or one of its playbooks or skills changes. Published in `catalog.json`; QACI Duo offers an installed copy the update when this is higher |
 | `name`, `title` | yes | Worker name and role |
 | `tagline` | yes | One sentence, at most 160 characters; shown on the Templates card |
 | `description` | yes | What the worker does and never does, at most 2,000 characters; becomes the bot's description |
@@ -98,7 +98,7 @@ After each merge the workflow builds, for every worker, a QACI Duo package v2 fi
 frontmatter `format: qaci-duo.package` / `version: 2`) whose agents are the worker's own agent plus any `agents` it
 declares, carrying the worker's playbooks and skills, with any `connections`, `rooms` and `routines` it declares,
 under a `team: {name, leader, brief}` object. It also writes the `catalog.json` (`format: qaci-duo.catalog`) that
-QACI Duo reads, each worker's team manifest (`teams/<id>/team.mausteam.json`, `format: qaci-duo.team`), and a copy
+QACI Duo reads (each entry names its `package`, `packages/<id>.json`, and its `release`), each worker's team manifest (`teams/<id>/team.mausteam.json`, `format: qaci-duo.team`), and a copy
 of every `playbooks/<name>/SKILL.md` (playbook or skill) for individual import.
 
 It also writes `packages/<id>.json` — the **same content**, wrapped as the real QACI Duo app actually reads it

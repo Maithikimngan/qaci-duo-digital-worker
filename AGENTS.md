@@ -1,0 +1,106 @@
+# AGENTS.md
+
+Guidance for coding agents (Claude Code, Codex, Cursor and others) working in this repository. Humans start with
+[README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md); the field reference is [FORMAT.md](FORMAT.md).
+
+## What this repository is
+
+The source of the Digital Workers that the QACI Duo app installs. Content is Markdown: `workers/<id>.md` (a bot)
+and `playbooks/<name>/SKILL.md` (a capability). A merge to `main` runs `.github/workflows/publish.yml`, which builds
+`dist/` and force-pushes it to the `library` branch; the app reads only `library` (`catalog.json`,
+`packages/<id>.json`). A change on `main` therefore reaches every user within minutes. Treat a merge as a release.
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `workers/<id>.md` | One Digital Worker: YAML frontmatter (identity, `release`, `apps`, `playbooks`, `skills`, `agents[]` with `soul`, …) and a body with `## Mission`, `## Working rules`, `## Completion rule` |
+| `playbooks/<name>/SKILL.md` | One capability. Used as a playbook, a skill, or both, by any worker |
+| `templates/` | The starting files for contributors; they must stay valid (CI checks them) |
+| `scripts/lib.mjs` | **Source of truth** for every rule: validators, package builder, catalog, allowed files, secret scan |
+| `scripts/validate.mjs`, `scripts/build.mjs` | `npm test` and `npm run build` entry points |
+| `scripts/import-from-qaci-duo.mjs` | One-off porter from the app's `docs/playbooks/*.json` |
+| `tests/validate.test.mjs` | Node test runner tests for `lib.mjs` |
+| `schema/*.schema.json` | JSON Schema mirror of `lib.mjs`, for editors only. If it disagrees with `lib.mjs`, the schema is wrong |
+| `app/`, `components/`, `lib/` | The read-only Next.js browsing site (`npm run site:dev`). Not part of CI or the library |
+| `dist/` | Build output, git-ignored. Never commit it; never edit the `library` branch by hand |
+
+CI rejects any file outside the allowed layout (`ALLOWED_FILES` in `scripts/lib.mjs`). A helper script cannot sit
+next to a `SKILL.md`: put it inline in the skill as a code block the bot saves and runs.
+
+## Commands
+
+```sh
+npm ci --ignore-scripts
+npm test            # validate every worker and playbook, then run the unit tests; must pass before any commit
+npm run build       # write dist/ (catalog.json, packages/<id>.json and .md, teams/, playbooks/)
+npm run typecheck   # only when you touch app/, components/ or lib/
+```
+
+## Rules the validator enforces
+
+- **SKILL.md frontmatter is one line per field.** No YAML lists or multi-line values; comma-separate list items and
+  double-quote a value containing `": "`. Required: `name` (= folder name), `title` (≤100), `description` (≤300
+  characters, one sentence), `triggers` (1–30 phrases), `license`, `author`. Optional: `tags` (≤8), `compatibility`.
+  Unknown fields fail.
+- **SKILL.md size:** the body at most 24,000 characters when carried as a playbook; the whole file at most 256 KB.
+  Reviewers (not the validator) also expect the sections `# Title`, `## When to use` (with a **Not for:** line),
+  `## Inputs`, `## Procedure`, `## Output`, `## Quality checklist`, `## Guardrails`, `## Example`.
+- **Worker:** `id` = file name, semantic `release`, `tagline` ≤160, `description` ≤2,000, `soul` <24,000 bytes,
+  at least one `playbooks` or `skills` entry, every name must exist as `playbooks/<name>/SKILL.md`.
+- **No secrets or tricks** in any tracked file: tokens, keys, long base64-like strings, piping a download into a
+  shell, invisible Unicode. Apps are declared by `slug` only; credentials live in the user's app connections.
+
+## How the app uses what you write
+
+Knowing this decides how to write a skill. The relevant app code is `server/installed-playbooks.ts` and
+`server/skills.ts` in the `qaci-duo` repository.
+
+- **`playbooks:` are injected by trigger.** The owner's message is lower-cased and stripped of punctuation; a
+  playbook is injected only when one of its `triggers` appears as a whole phrase. At most 3 per message, 24,000
+  characters in total. A missed trigger means the bot never sees the playbook.
+- **`skills:` are listed by path.** Every enabled skill appears under *Imported skills* with the path of its
+  `SKILL.md`. The bot reads it with its file tools. It is not Claude Code's Skill tool, so write "open the `<name>`
+  skill (read its SKILL.md; the exact path is in your Imported skills list)", never "call the skill".
+- **Carry a worker's main procedure as both**, and have the `soul` say to open the skill when it is not already in
+  the instructions. Then a message that misses every trigger still gets the full procedure.
+- **`agents[]` lists are subsets.** When you add a playbook or skill to a worker, also add it to `agents[].playbooks`
+  / `agents[].skills` of each agent that should use it. Connections default to none per agent.
+- **Apps start off.** A bot installed from a package has app access switched off. A skill that needs an app must say
+  what to do when its tools are absent (tell the owner how to turn them on, then stop) and must name exact tools.
+  Composio apps are loaded with `COMPOSIO_SEARCH_TOOLS` and run through `COMPOSIO_MULTI_EXECUTE_TOOL`.
+- **`attach_file` refuses `.html`.** Deliver Markdown (or another accepted type) and give the HTML's path in chat.
+- **Background tasks replace the answer.** A shell command that outlives its timeout is moved to the background,
+  and when it finishes it wakes the bot and can overwrite the final reply. Helpers must have a hard deadline, and the
+  skill must say to run them in the foreground and wait for anything that went to the background.
+- **`release` drives updates.** It is published in `catalog.json`; installed copies are offered an update when it
+  is higher. Bump it for every change to the worker or to any playbook or skill it carries.
+
+## Writing a good skill
+
+- One procedure with one result. Inputs asked once, all together, with a default when nobody answers.
+- Numbered steps, each concrete, with a *Check:* line where a step commonly goes wrong.
+- Chain skills explicitly: end a skill with a *Next:* line naming the next skill, and hand off through files in a
+  shared working folder (for example `research/<topic-slug>/`) rather than through chat.
+- Name every tool and its parameters; say what to do when a tool is missing or fails. Never let the bot fill a gap
+  from memory.
+- Evidence rules: never invent papers, numbers, people or links; every claim points to a source produced in the run.
+- Guardrails: **Never** and **Ask first** lists cover sending, publishing, deleting, spending and costly jobs.
+- Keep souls and skills in English; tell the bot to reply in the owner's language.
+
+## Testing a change
+
+`npm test` proves the format, not the behaviour. Before proposing a change to a worker's procedure:
+
+1. `npm run build` and import `dist/packages/<id>.json` into a real QACI Duo (Templates screen), turn on its apps,
+   and give it a realistic request — once with a message that matches a trigger and once with one that does not.
+2. Compare against the previous release on the same requests. Note what improved, what regressed, and run time and
+   cost, in the pull request's *Tried on* section.
+
+## Conventions
+
+- Commit messages and PR titles in English, imperative mood ("Add rebuttal playbook to Paper Writer").
+- When you change a rule in `scripts/lib.mjs`, add or update a test in `tests/validate.test.mjs`, and update
+  FORMAT.md and `schema/` to match.
+- When you add or rename a worker, update the *Available today* table in README.md.
+- Do not commit `dist/`, `.next/`, `node_modules/`, credentials, or personal data.

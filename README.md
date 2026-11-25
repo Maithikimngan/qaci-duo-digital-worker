@@ -1,10 +1,12 @@
-# QACI Duo playbooks
+# QACI Duo Digital Workers
 
-A community library of **Digital Workers** and **playbooks** for QACI Duo, maintained by pull request.
+The library of **Digital Workers** and **playbooks** that QACI Duo installs from, maintained by pull request.
 
-- A **Digital Worker** is one bot in QACI Duo, with a role, working rules and a set of playbooks.
-- A **playbook** is one capability: a concrete procedure written as a standard `SKILL.md`. A worker carries several
-  playbooks, and any playbook can be added to any worker.
+- A **Digital Worker** is one bot in QACI Duo (or a small team of bots), with a role, a standing system prompt
+  (`soul`), working rules and a set of capabilities.
+- A **playbook** is one capability: a concrete procedure written as a standard `SKILL.md`. The same file can be
+  carried by a worker as a trigger-injected *playbook*, as an embedded *skill*, or both — see
+  [FORMAT.md](FORMAT.md#playbook-vs-skill-the-same-playbooksnameskillmd-file-two-ways-to-carry-it).
 
 ```
 playbooks/<name>/SKILL.md ─┐
@@ -13,49 +15,41 @@ workers/<id>.md ───────────┴─► pull request ─► C
 
 ## Available today
 
-This repository now holds QACI Duo's own official Digital Workers, ported from `qaci-duo`'s real
-`docs/playbooks/*.json` rather than the research-workflow sample workers it shipped with earlier.
+| Digital Worker | What it does | Agents | Carries | Apps |
+|---|---|---|---|---|
+| **Literature Surveyor** (`workers/literature-surveyor.md`) | Searches, verifies and close-reads papers; writes a cited `SURVEY.md` with a novelty verdict and a brief for experiment design | `surveyor` | playbook `survey-literature` + 6 skills | Exa; DeepWiki, cve.now optional |
+| **Experiment Designer** (`workers/experiment-designer.md`) | Turns an idea and a survey into a reviewed plan with pass and fail criteria: `DESIGN.md` + `DESIGN.html` | `designer` | playbook `design-experiments` + 9 skills | Exa; DeepWiki optional |
+| **Experiment Runner** (`workers/experiment-runner.md`) | Implements and runs a designed experiment for real | `runner` | 1 skill | — |
+| **Experiment Validator** (`workers/experiment-validator.md`) | Independently checks experiment results against the design's criteria | `validator` | 1 skill | — |
+| **ADLC** (`workers/adlc.md`) | Autonomous software delivery, end to end | `bot` | 16 `adlc-*` / `deploy-*` skills | GitHub, Render; MCP slot `qaci-data` |
 
-| Digital Worker | Role | Agents | Skills |
-|---|---|---|---|
-| **ADLC** (`workers/adlc.md`) | Four-agent software team: PM, Tech Lead, Engineer, Deployer | `pm`, `lead`, `engineer`, `deployer` | 14 `adlc-*`/`deploy-*` skills |
-
-Each carries its real production `soul` per agent (the actual standing system prompt from `qaci-duo`), and ADLC
-declares a real MCP connection (`qaci-data`, held only by `pm`). A Digital Worker can be a single bot or carry a
-whole small team: more than one `agents[]` entry, a shared room, a standing `soul` per agent, declared MCP
-`connections`, and whole embedded `skills` as well as lightweight `playbooks`. See [FORMAT.md](FORMAT.md) for the
-full field reference and [`templates/worker.md`](templates/worker.md) for a commented example.
-
-Every playbook follows the same shape — *When to use*, *Inputs*, *Procedure* with a check per step, *Output* template,
-*Quality checklist*, *Guardrails* and an *Example* — so a worker knows what to ask, what to do and what to hand back.
-A capability carried as a full embedded `skill` instead is the same `SKILL.md` file, just attached differently — see
-FORMAT.md's *Playbook vs. skill* section.
+The four research workers are standalone: none hands work to another bot. The owner carries the files along the
+chain (`SURVEY.md` → `DESIGN.md` → results). The current release of each worker is its `release` field, also
+published in the library's `catalog.json` so QACI Duo can offer an in-place update.
 
 ## Use them in QACI Duo
 
-- **Install a whole worker:** **+ → Templates → Community templates**, pick the worker, **Load**, then **Add team**.
-  QACI Duo creates one bot with all of the worker's playbooks.
-- **Install from a file directly:** use `packages/<id>.json` on the `library` branch, not `packages/<id>.md` —
-  the `.json` file is the shape the real app's own import actually reads today; see FORMAT.md.
-- **Add one playbook to a worker you already have:** open the playbook's `SKILL.md` on the
-  [`library` branch](https://github.com/vanhaito/qaci-duo-playbooks/tree/library/playbooks) (choose **Raw**), copy it,
-  and paste it into **Settings → Skills → Import a skill**. Settings shows *Skills* in **Advanced mode**. An imported
-  skill arrives switched off: read it, switch it on, then **Assign** it to the worker.
+- **Install a whole worker:** open the Templates screen (**QACI Digital Worker**), pick the worker and add it. QACI
+  Duo shows a preview first; connected apps stay off until you turn them on in the bot's **Settings → Apps**.
+- **Install from a file:** use `packages/<id>.json` on the `library` branch. It is the shape the app imports;
+  `packages/<id>.md` is this repository's own catalog format.
+- **Add one playbook to a worker you already have:** open its `SKILL.md` on the
+  [`library` branch](https://github.com/vntuananhbui/qaci-duo-digital-worker/tree/library/playbooks) (choose
+  **Raw**), copy it, and paste it into **Settings → Skills → Import a skill** (Settings shows *Skills* in **Advanced
+  mode**). An imported skill arrives switched off: read it, switch it on, then **Assign** it to the worker.
 - **Try a worker before it is merged:** see [CONTRIBUTING.md](CONTRIBUTING.md#try-it-before-you-open-a-pull-request).
 
 ## Contribute
 
-The repository is private: ask a code owner to add you as a collaborator to read it and open pull requests.
-
-Add a playbook, improve an existing one, or propose a new worker: start with [CONTRIBUTING.md](CONTRIBUTING.md); the
-file format is in [FORMAT.md](FORMAT.md). Have an idea but no time to write it? Open a **Playbook idea** issue.
+Add a playbook, improve one, or propose a new worker: start with [CONTRIBUTING.md](CONTRIBUTING.md); the file format
+is in [FORMAT.md](FORMAT.md). Coding agents working in this repository should read [AGENTS.md](AGENTS.md). Have an
+idea but no time to write it? Open a **Playbook idea** issue.
 
 `main` holds the sources. The `library` branch is generated by a workflow and must not be edited by hand. QACI Duo
 reads only `library`, so a change reaches users only after review and merge.
 
 ## Browse
 
-`npm run site:dev` runs a small Next.js site (ported from the openmausbot-teams project, see below) that lists the
-Digital Workers and playbooks already in this repository and lets you read or copy any of them — see
-[PORTING_NOTES.md](PORTING_NOTES.md) for what it adapts versus this repository's own CI (`npm test` / `npm run
-build`, used to publish the `library` branch), which is unchanged and still the only thing CI runs.
+`npm run site:dev` runs a small Next.js site that lists the Digital Workers and playbooks in this repository and
+lets you read or copy any of them. CI does not run it: CI runs only `npm test` and `npm run build`. See
+[PORTING_NOTES.md](PORTING_NOTES.md) for where the site and the package format came from.
