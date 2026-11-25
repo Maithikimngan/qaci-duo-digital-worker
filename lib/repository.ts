@@ -25,8 +25,7 @@ export type DuoColor =
 
 /**
  * The shape scripts/lib.mjs's `workerPackage()` writes and `validatePackage()` checks — see
- * schema/package.schema.json. Ported from openmausbot-teams' `BotPackage` (lib/packages.ts); the format
- * discriminator and the `routines[].runOn` value were renamed, see PORTING_NOTES.md.
+ * schema/package.schema.json.
  */
 export interface WorkerConnection {
   key: string;
@@ -98,8 +97,7 @@ export interface WorkerPackage {
   skills?: { version: 1; entries: WorkerSkill[] };
   examples?: Array<{ title: string; input: string; output: string }>;
   /**
-   * Ported for structural parity with openmausbot-teams' public revenue-claim field (lib/proof.ts /
-   * lib/research.ts there). No QACI Duo Digital Worker carries a revenue claim, so this is always absent
+   * Optional provenance field. No QACI Duo Digital Worker carries a revenue claim, so this is always absent
    * here — see PORTING_NOTES.md. Kept so a future, genuine provenance field has somewhere to land without
    * another rename.
    */
@@ -129,8 +127,7 @@ interface Loaded {
 let cache: Loaded | null = null;
 
 /** Generates every worker's package in memory (the same bytes `npm run build` would write to
- * dist/packages/<id>.md) and parses each one back, exactly as openmausbot-teams' own
- * lib/packages.ts reads packages/*.md from disk. Throws if the repository has a validation
+ * dist/packages/<id>.md) and parses each one back. Throws if the repository has a validation
  * problem `npm test` would also report — the site only ever shows content that already passes CI. */
 function load(): Loaded {
   if (cache) return cache;
@@ -168,7 +165,7 @@ export function getWorkerMarkdown(id: string): string | undefined {
   return load().markdownById.get(id);
 }
 
-const defaultRepository = "vanhaito/qaci-duo-playbooks";
+const defaultRepository = "vntuananhbui/qaci-duo-digital-worker";
 
 /** QACI Duo reads workers through the GitHub API on the generated `library` branch (see README.md), not `main`. */
 export function workerRawUrl(id: string): string {

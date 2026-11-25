@@ -4,11 +4,7 @@ import { useState } from "react";
 
 import DuoAvatar from "@/components/DuoAvatar";
 
-// Ported from openmausbot-teams' components/InstallButton.tsx, adapted: that component linked to a custom
-// `openmausbot://install?url=...` URI scheme OpenMausBot registers. QACI Duo has no such public deep link, so
-// rather than invent one this copies the generated package to the clipboard — the real install path documented
-// in this repository's README.md ("+ -> Templates -> Community templates -> Load -> Add team"). See
-// PORTING_NOTES.md.
+// Copies the generated package to the clipboard; QACI Duo has no public install deep link.
 export default function InstallButton({ markdown }: { markdown: string }) {
   const [copied, setCopied] = useState(false);
   return (

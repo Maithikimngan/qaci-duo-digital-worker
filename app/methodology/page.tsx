@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-// Ported from openmausbot-teams' app/methodology/page.tsx, rewritten: that page explained BotMRR's own
-// revenue-claim-free "package" product pitch. There is no QACI Duo analog to that, so instead of carrying
-// BotMRR's business content over, this page explains the real review pipeline documented in this
-// repository's CONTRIBUTING.md / FORMAT.md / SECURITY.md. See PORTING_NOTES.md.
+// Explains the review pipeline documented in CONTRIBUTING.md / FORMAT.md / SECURITY.md.
 export const metadata: Metadata = {
   title: "How QACI Duo playbooks work",
   description: "How a submission becomes a validated, reviewed, published QACI Duo Digital Worker.",

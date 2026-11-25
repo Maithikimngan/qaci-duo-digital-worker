@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 
-// Ported from openmausbot-teams' components/ConnectorIcon.tsx, trimmed to connectors relevant to a
-// research/engineering playbook library (the BotMRR-specific and brand-specific slugs — grok, grok-bot,
-// polymarket, robinhood, servicetitan, quo, and the literal openmausbot.com domain — were dropped rather
-// than carried over; see PORTING_NOTES.md). Falls back to a letter badge for any unmapped slug.
+// Maps an app slug to its domain for a favicon; falls back to a letter badge for any unmapped slug.
 const CONNECTOR_DOMAINS: Record<string, string> = {
   beehiiv: "beehiiv.com",
   cursor: "cursor.com",

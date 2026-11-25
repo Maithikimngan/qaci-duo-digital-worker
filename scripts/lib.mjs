@@ -1,10 +1,8 @@
 // Shared rules for QACI Duo Digital Workers and playbooks: parse, validate, scan for secrets and build the library.
 // A playbook is one SKILL.md (one capability); a Digital Worker (workers/<id>.md) is one bot that carries playbooks
 // and, optionally, full embedded skills, MCP connection slots, and per-agent souls (standing system prompts).
-// The checks follow QACI Duo's own parsers (shared/skill-md.ts, shared/package-format.ts). The validation approach —
-// and the "qaci-duo.package" / "qaci-duo.team" / "qaci-duo.catalog" package format this file reads and writes — is
-// adapted from the openmausbot-teams project (https://github.com/milind-soni/openmausbot-teams, MIT), whose own
-// discriminator strings ("botmrr", "openmaus.team", "openmaus.catalog") were renamed here; see PORTING_NOTES.md.
+// The checks follow QACI Duo's own parsers (shared/skill-md.ts, shared/package-format.ts). Provenance of the
+// package format: PORTING_NOTES.md.
 // The package shape (team{name,leader,brief}, connections[], skills.entries[], agent.soul) matches QACI Duo's own
 // package v2 schema (shared/package-format.ts's packageDocumentSchema), not just the lighter v1 shape.
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
@@ -13,11 +11,11 @@ export const REQUIRED_SECTIONS = ["Activation", "Mission", "Outcomes", "Connecti
 export const COLORS = new Set(["green", "blue", "red", "orange", "purple", "cyan", "pink", "yellow", "teal", "coral"]);
 export const MAX_PACKAGE_BYTES = 1_000_000; // QACI Duo refuses larger playbook files
 export const MAX_CATALOG_BYTES = 256_000;
-export const PACKAGE_FORMAT = "qaci-duo.package"; // was "botmrr" (bare `botmrr: 1` key) in openmausbot-teams
+export const PACKAGE_FORMAT = "qaci-duo.package";
 export const PACKAGE_VERSION = 2; // QACI Duo package v2: team{name,leader,brief}, connections[], skills.entries[]
-export const TEAM_FORMAT = "qaci-duo.team"; // was "openmaus.team"
-export const CATALOG_FORMAT = "qaci-duo.catalog"; // was "openmaus.catalog"
-export const ROUTINE_RUNTIMES = new Set(["duo", "cloud"]); // was ["maus", "cloud"]
+export const TEAM_FORMAT = "qaci-duo.team";
+export const CATALOG_FORMAT = "qaci-duo.catalog";
+export const ROUTINE_RUNTIMES = new Set(["duo", "cloud"]);
 export const SOUL_MAX_BYTES = 24_000; // a standing system prompt's limit, same cap QACI Duo itself uses
 export const TEAM_BRIEF_MAX_BYTES = 24_000;
 export const MAX_CONNECTIONS = 20;

@@ -6,7 +6,7 @@ export default function Footer() {
       <p>Digital Workers and playbooks for QACI Duo. Reviewed by a code owner, generated, then published.</p>
       <div>
         <Link href="/methodology">How it works</Link>
-        <a href="https://github.com/vanhaito/qaci-duo-playbooks" target="_blank" rel="noreferrer">Source on GitHub</a>
+        <a href="https://github.com/vntuananhbui/qaci-duo-digital-worker" target="_blank" rel="noreferrer">Source on GitHub</a>
       </div>
     </footer>
   );

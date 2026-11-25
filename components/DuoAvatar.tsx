@@ -1,8 +1,5 @@
 "use client";
 
-// Ported from openmausbot-teams' components/MausAvatar.tsx (renamed: MausAvatar -> DuoAvatar,
-// MAUS_COLORS -> DUO_COLORS, MausColor -> DuoColor; see PORTING_NOTES.md). CursorAvatar.tsx itself is
-// a generic, silhouette-agnostic mascot engine unrelated to that naming, so it is unchanged.
 import CursorAvatar, {
   DEFAULT_SILHOUETTE,
   type CursorSilhouette,

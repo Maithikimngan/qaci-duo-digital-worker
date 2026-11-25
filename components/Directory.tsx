@@ -1,8 +1,5 @@
 "use client";
 
-// Ported from openmausbot-teams' components/Directory.tsx, adapted: BotMRR's ten-slot sponsor rail (SponsorCard,
-// the left/right <aside> columns) is dropped entirely — this is a private, unmonetized Digital Worker library,
-// not a paid directory — and every "team"/"bot" label becomes "worker"/"agent". See PORTING_NOTES.md.
 import {
   ArrowUpRight,
   Bot,
